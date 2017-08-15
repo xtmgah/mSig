@@ -1,23 +1,30 @@
-#
-# mSigTools
-#
-# v0.8
-#
-# An alpha version
-#
-# 2017 08 11
-#
-# Copyright 2017 by Alvin Wei Tian Ng, Steven G. Rozen
-#
-# The code is released under GPL-3
-# https://www.gnu.org/licenses/gpl-3.0.en.html
+#'
+#' mSigTools
+#'
+#' v0.8
+#'
+#' An alpha version
+#'
+#' 2017 08 11
+#'
+#' Copyright 2017 by Alvin Wei Tian Ng, Steven G. Rozen
+#'
+#' The code is released under GPL-3
+#' https://www.gnu.org/licenses/gpl-3.0.en.html
 
 # Dependencies
-library(stringi)
-library('lsa') # for cosine()
+#library(stringi)
+#library('lsa') # for cosine()
 
+
+#' ToDo: document this function!
+#'
+#' @param seq ToDo
+#'
+#' @return ToDo
+#'
+#' @importFrom stringi stri_reverse stri_trans_char
 revc <- function(seq) {
-
   rq <- stri_reverse(seq)
   rq1 <- stri_trans_char(rq, 'ACGT', '1234')
   # We have to do this in two steps because
@@ -26,6 +33,13 @@ revc <- function(seq) {
   stri_trans_char(rq1, '1234', 'TGCA')
 }
 
+
+#' ToDo: document this function!
+#'
+#' @param spec                 ToDo
+#' @param sample.name.or.index ToDo
+#'
+#' @return ToDo
 xtract.col <- function(spec, sample.name.or.index) {
   tmp <- as.matrix(spec[ , sample.name.or.index])
   if (ncol(tmp) > 1) return(tmp)
@@ -41,6 +55,7 @@ xtract.col <- function(spec, sample.name.or.index) {
 # Funtions for reading catalogs, etc.
 ######################################
 
+#' ToDo: document this value.
 .canonical.96.row.order <-
   c("ACAA", "ACCA", "ACGA", "ACTA", "CCAA", "CCCA", "CCGA", "CCTA",
     "GCAA", "GCCA", "GCGA", "GCTA", "TCAA", "TCCA", "TCGA", "TCTA",
@@ -56,14 +71,19 @@ xtract.col <- function(spec, sample.name.or.index) {
     "GTAG", "GTCG", "GTGG", "GTTG", "TTAG", "TTCG", "TTGG", "TTTG"
   )
 
-# Read 96-channel spectrum or signatures in Ludmil format
-
+#' Read 96-channel spectrum or signatures in Ludmil format
+#'
+#' @param path ToDo
+#'
+#' @return ToDo
+#'
+#' @importFrom utils read.table
 read.96.ludmil.format <- function(path) {
   cos <- read.table(path,
                     stringsAsFactors = F,
                     as.is = T,
                     header = T,
-                    sep=',', 
+                    sep=',',
                     check.names = F)
   stopifnot(nrow(cos)==96)
   ref.gt.var <- cos[ ,1]
@@ -77,16 +97,22 @@ read.96.ludmil.format <- function(path) {
   out[.canonical.96.row.order, drop=F]
 }
 
-### Read 96-channel spectrum or signatures in Duke-NUS format
-### This is a tab separated format with mutations information in
-### the columns Before, Ref, After, Var
 
+#' Read 96-channel spectrum or signatures in Duke-NUS format
+#' This is a tab separated format with mutations information in the columns
+#' Before, Ref, After, Var.
+#'
+#' @param path ToDo
+#'
+#' @return ToDo
+#'
+#' @importFrom utils read.table
 read.96.duke.nus.format <- function(path) {
   cos <- read.table(path,
                     stringsAsFactors = F,
                     as.is = T,
                     header = T,
-                    sep='\t', 
+                    sep='\t',
                     check.names = F)
   stopifnot(nrow(cos)==96)
   # Not sure yet what will the form of the row labels
@@ -98,12 +124,19 @@ read.96.duke.nus.format <- function(path) {
   out[.canonical.96.row.order, drop=F,]
 }
 
-### Read 192 channel spectra in Duke-NUS format
+
+#' Read 192 channel spectra in Duke-NUS format
+#'
+#' @param path ToDo
+#'
+#' @return ToDo
+#'
+#' @importFrom utils read.table
 read.and.prep.192.duke.nus.catalog <- function(path) {
   df <- read.table(path,
                        stringsAsFactors = F,
                        as.is=T,
-                       header=T, 
+                       header=T,
                    check.names = F)
   # Careful, df has 192 row
   stopifnot(nrow(df)==192)
@@ -134,10 +167,14 @@ read.and.prep.192.duke.nus.catalog <- function(path) {
   list(channel.96=out2, channel.192=df)
 }
 
-# Add the four Duke-NUS format columns, Before, Ref, After, Var to the left of 
-# matrix or data frame, i.e. splits the rownames and creates the four new
-# columns, Before, Ref, After Var
 
+#' Add the four Duke-NUS format columns, Before, Ref, After, Var to the left of
+#' matrix or data frame, i.e. splits the rownames and creates the four new
+#' columns, Before, Ref, After Var
+#'
+#' @param mat.or.df ToDo
+#'
+#' @return ToDo
 duke.nus.rownames.to.cols <- function(mat.or.df) {
   newcols <- strsplit(rownames(mat.or.df), split='')
   newcols <- t(data.frame(newcols))
@@ -147,7 +184,13 @@ duke.nus.rownames.to.cols <- function(mat.or.df) {
   out
 }
 
-# works for spectrum or exposure matrices (columns are samples)
+
+#' works for spectrum or exposure matrices (columns are samples).
+#' ToDo: explain what it actually does!
+#'
+#' @param spectrum ToDo
+#'
+#' @return ToDo
 sort.spectra.columns <- function(spectrum) {
   if (ncol(spectrum) <= 1) return(spectrum) # ncol can be 0, or 1
   spect.total <- margin.table(spectrum, 2)
@@ -159,6 +202,15 @@ sort.spectra.columns <- function(spectrum) {
 # Funtions for plotting, etc.
 ######################################
 
+#' ToDo: document this function!
+#'
+#' @param path        ToDo
+#' @param spec.or.sig ToDo
+#' @param show.counts ToDo
+#'
+#' @return ToDo
+#'
+#' @importFrom grDevices dev.off
 pdf.mut.sig.profile <- function(path, spec.or.sig, show.counts=F) {
   spectrum.plot.pdf.setup(path)
   t.plot.spectra(duke.nus.rownames.to.cols(spec.or.sig),
@@ -167,9 +219,21 @@ pdf.mut.sig.profile <- function(path, spec.or.sig, show.counts=F) {
   dev.off()
 }
 
-### plot.ex.by.range
-###
-### Plot exposures broken up by ranges
+#' Plot exposures broken up by ranges. ToDo: more details!
+#'
+#' @param spectrum ToDo
+#' @param sigs     ToDo
+#' @param exp      ToDo
+#' @param ranges   ToDo
+#' @param col      ToDo
+#' @param main     ToDo
+#' @param xlab     ToDo
+#' @param ylab     ToDo
+#' @param mfrow    ToDo
+#'
+#' @return ToDo
+#'
+#' @importFrom graphics par
 plot.ex.by.range <- function(spectrum,
                              sigs,
                              exp,
@@ -187,7 +251,7 @@ plot.ex.by.range <- function(spectrum,
     oma  =rep(3, 4) # outer margin between figure and device.
   )
   if (is.null(ylab)) ylab <- 'Number of mutations'
-  first=T
+  first=T # ToDo: don't do this, pull out the first call
   for (range in ranges) {
     if (first) {
       plot.exposures(exp[ ,range], signatures=sigs,
@@ -198,7 +262,7 @@ plot.ex.by.range <- function(spectrum,
                      ylab=ylab, xlab=xlab)
       first=F
     } else {
-      plot.exposures(exp[ ,range], signatures=sigs, 
+      plot.exposures(exp[ ,range], signatures=sigs,
                      input.genomes = spectrum[ , range],
                      plot.proprtion = F, plot.legend=F,
                      main=main,
@@ -209,15 +273,30 @@ plot.ex.by.range <- function(spectrum,
 }
 
 
+#' ToDo: document this function!
+#'
+#' @param path     ToDo
+#' @param spectrum ToDo
+#' @param sigs     ToDo
+#' @param exp      ToDo
+#' @param ranges   ToDo
+#' @param col      ToDo
+#' @param main     ToDo
+#' @param xlab     ToDo
+#' @param ylab     ToDo
+#'
+#' @return ToDo
+#'
+#' @importFrom grDevices pdf dev.off
 pdf.ex.by.range <- function(path,   # Out file path
-                             spectrum,
-                             sigs,
-                             exp,
-                             ranges, # A list of vectors
-                             col=NULL,
-                             main=NULL,
-                             xlab=NULL,
-                             ylab=NULL
+                            spectrum,
+                            sigs,
+                            exp,
+                            ranges, # A list of vectors
+                            col=NULL,
+                            main=NULL,
+                            xlab=NULL,
+                            ylab=NULL
 ) {
   pdf(path, width=8.2677, height=11.6929, # for A4
       onefile=T, useDingbats=F)
@@ -228,6 +307,14 @@ pdf.ex.by.range <- function(path,   # Out file path
 
 ### Utilities for managing different underlying trinucleotide frequencies
 
+
+#' ToDo: document this function!
+#'
+#' @param path ToDo
+#'
+#' @return ToDo
+#'
+#' @importFrom utils read.table
 read.opportunity <- function(path) {
   op <- read.table(path, as.is=T, stringsAsFactors = F, header=T, sep='\t')
 
@@ -289,16 +376,18 @@ transform.96.sig.op1.op2 <- function(input.sig.mat, in.op, out.op) {
   out3
 }
 
-### Get mutational signatures specified as proportions based on
-### human WGS (whole genome sequence) count in file 
-### signature.file.
-###
-### Return a list of three signature matrices: WGS, WES, and "flat".
-###
-### IMPORTANT: this replaces get.COSMIC.signatures and now requires the
-### name of the signature file.
+#' Get mutational signatures specified as proportions based on human WGS (whole
+#' genome sequence) count in file signature.file.
+#'
+#' IMPORTANT: this replaces get.COSMIC.signatures and now requires the name of
+#' the signature file.
+#'
+#' @param exome.op       ToDo
+#' @param signature.file ToDo
+#' @param debug          ToDo
+#'
+#' @return A list of three signature matrices: WGS, WES, and "flat".
 get.signatures <- function(exome.op, signature.file, debug=F) {
-
   # Read the mutational signatures in genome frequencies
   cosmic <- read.96.duke.nus.format(signature.file)
 
@@ -375,6 +464,12 @@ get.signatures <- function(exome.op, signature.file, debug=F) {
              GA='TC', GC='GC', GG='CC', GT='AC',
              TA='TA', TC='GA', TG='CA', TT='AA')
 
+
+#' ToDo: document this function!
+#'
+#' @param y ToDo
+#'
+#' @return ToDo
 get_ylim = function(y) {
   if (y > 300) y = 200 * ceiling(y/200)   # round to nearest 200
   else if (y > 150) y = 100 * ceiling(y/100)   # round to nearest 100
@@ -383,15 +478,29 @@ get_ylim = function(y) {
   return(y)
 }
 
+
+#' ToDo: document this function!
+#'
+#' @param counts.data.frame ToDo
+#' @param show.counts       ToDo
+#' @param show.class.names  ToDo
+#' @param all.labels        ToDo
+#' @param show.x.labels     ToDo
+#' @param trace             ToDo
+#' @param show.paren        ToDo
+#'
+#' @return ToDo
+#'
+#' @importFrom graphics axis mtext plot plot.new rect text
 t.plot.spectra = function(counts.data.frame,
-                        show.counts=T,
-                        show.class.names=F,
-                        all.labels=F,
-                        show.x.labels=F,
-                        trace=F,
-                        show.paren=F) {
+                         show.counts=T,
+                         show.class.names=F,
+                         all.labels=F,
+                         show.x.labels=F,
+                         trace=F,
+                         show.paren=F) {
   region <- 'genome'
-  
+
   num.classes <- 96
 
   base.frequencies.triplets <- flat.64.opportunity()
@@ -429,12 +538,12 @@ t.plot.spectra = function(counts.data.frame,
       "T>G"=sum(counts.data.frame[(Ref.A & Var.C)|(Ref.T & Var.G), which.col])
     )
 
-     
+
     if (trace) print(unstranded.counts)
     percents = rep(0, num.classes)
     maj.class.counter = 0 # major class. Ie B₁>B₂
     maj.class.names = c() # only those (eg C>A) present in input data
-    
+
     contexts.used = c() # debug
     for (ref in ref.bases) {
       for (variant in var.bases) {
@@ -460,7 +569,7 @@ t.plot.spectra = function(counts.data.frame,
             weighting.antisense =
               base.frequencies.triplets[sprintf("%s%s%s",.pair[after],.pair[ref],.pair[before]), 1]
             class.offset = (maj.class.counter-1) * 16
-            contexts.used[class.offset+counter] = 
+            contexts.used[class.offset+counter] =
               paste(before, ref, variant, after, sep='')
             # we combine the weightings for both strands instead of taking
             # individual triplets into account, so that it's easier to compare
@@ -561,7 +670,7 @@ t.plot.spectra = function(counts.data.frame,
         }
       }
     }
-    
+
     if (show.x.labels && draw.labels) {
       # context base labels:
       sz=.4
@@ -575,10 +684,10 @@ t.plot.spectra = function(counts.data.frame,
       mtext('C',side=1, at=start.of.class+offsets[2], line=-.1, adj=.5, cex=sz)
       mtext('G',side=1, at=start.of.class+offsets[3], line=-.1, adj=.5, cex=sz)
       mtext('T',side=1, at=start.of.class+offsets[4], line=-.1, adj=.5, cex=sz)
-      
+
       # note: at -.7 because it doesn't line up with 5' !?
       mtext("followed by 3'", side=1, at=-.7, line=.65, cex=.5, adj=1)
-      
+
       labels.5p = (0:23)*4 +1 # where we have each 5' label
       bars.per.3p = 1
       mtext('A', side=1, at=labels.5p+0*bars.per.3p, line=.4, adj=.5, cex=sz)
@@ -587,19 +696,39 @@ t.plot.spectra = function(counts.data.frame,
       mtext('T', side=1, at=labels.5p+3*bars.per.3p, line=.4+3*y.step, adj=.5, cex=sz)
 
     }
-    
+
   } # end for each spectrum
   if (trace) cat('\n')
 }
 
-plot.exposures <- 
+
+#' ToDo: document this function!
+#'
+#' @param s.weights      ToDo
+#' @param signames       ToDo
+#' @param scale.num      ToDo
+#' @param signatures     ToDo
+#' @param input.genomes  ToDo
+#' @param plot.proprtion ToDo
+#' @param plot.legend    ToDo
+#' @param ylim           ToDo
+#' @param main           ToDo
+#' @param ylab           ToDo
+#' @param xlab           ToDo
+#' @param col            ToDo
+#'
+#' @return ToDo
+#'
+#' @importFrom grDevices rainbow
+#' @importFrom graphics barplot legend mtext par text
+plot.exposures <-
   function(s.weights, # This is actually the exposure "counts"
            # (or floats approximating the exposure counts)
            signames=NULL,
            scale.num=NULL,
            signatures=NULL,
            input.genomes=NULL,
-           plot.proprtion=T,
+           plot.proprtion=T, # ToDo: fix the name
            plot.legend=T,
            ylim=NULL,
            main=NULL,
@@ -607,18 +736,17 @@ plot.exposures <-
            xlab=NULL,
            col=NULL
   ) {
-    
     # note - might be reals > 1, not necessary colSum==1
     s.weights <- as.matrix(s.weights) # in case it is a data frame
     signature_proportions <- t(s.weights)
     num.sigs = dim(s.weights)[1]
     num.samples = dim(s.weights)[2]
-    
+
     if (is.null(col)) {
       if (num.sigs <= 8) {
         col = # c('skyblue', 'black', 'grey', 'yellow', 'blue', 'brown', 'green4', 'red')
           c('red', 'black', 'grey', 'yellow', 'blue', 'brown', 'green4', 'skyblue')
-        
+
       } else {
         # lots of signatures; use shaded lines to differentiate
         col = rainbow(num.sigs)
@@ -637,7 +765,7 @@ plot.exposures <-
     num.repeats = ceiling(num.sigs/length(p.dense))
     p.dense.rev = rev(rep(p.dense,num.repeats)[1:num.sigs])
     p.angle.rev = rev(rep(p.angle,num.repeats)[1:num.sigs])
-    
+
     # add names (if not already set as row.names in the original input frame)
     # for sorting. (needs a "Sample" column in the signature_proportions frame)
     # if (length(colnames(s.weights))==0) colnames(s.weights) = signature_proportions$Sample
@@ -653,13 +781,13 @@ plot.exposures <-
     }
     l.cex = if (num.sigs > 15) .5 else 1 # char expansion for legend (was 0.7)
     direction = 2 # 1=always horizontal, 2=perpendicular to axis
-    
+
     # if we weights file and counts file have samples in different order
     if (!all(colnames(s.weights)==colnames(input.genomes))) {
       input.genomes = input.genomes[,colnames(s.weights)]
       warning('weights file and counts file are ordered differently; re-ordering counts.')
     }
-    
+
     # ignore column names; we'll plot them separately to make them fit
     bp = barplot(s.weights,
                  ylim=ylim,
@@ -672,11 +800,11 @@ plot.exposures <-
                  density=p.dense, angle=p.angle,
                  border=ifelse(num.samples>200,NA,1),
                  main=main, cex.main=1.2)
-    
+
     # get max y values for plot region, put legend at top right
     dims = par('usr') # c(x.min, x.max, y.min, y.max)
     y.max = dims[4]
-    
+
     if (plot.legend) {
       # less space between rows (y.intersp), and between box & label (x.intersp)
       # reverse the order, so sig 1 is at bottom (to match bargraph)
@@ -691,7 +819,7 @@ plot.exposures <-
              bty='n', cex=l.cex * 0.9)
       text(x=legend.x, y = legend.y, "Mutational signature", adj=-0.09)
     }
-    
+
     # now add sample names, rotated to hopefully fit
     # don't even try to show all if there are too many
     if (num.samples <= 200) {
@@ -703,7 +831,7 @@ plot.exposures <-
       else size.adj = .3
       mtext(colnames(s.weights), side=1, at=bp, las=direction, cex=size.adj)
     }
-    
+
     if (plot.proprtion) {
       # add proportion panel; eg col should sum() to 1. matrix divided by
       # a vector goes col-wise, not row-wise, so transpose twice :(
@@ -711,9 +839,23 @@ plot.exposures <-
                    density=p.dense, angle=p.angle.rev,
                    main='', axisnames=F, border=NA)
     }
-    
+
   }
 
+
+#' ToDo: document this function!
+#'
+#' @param signatures      Mutation classes x signatures
+#' @param exposures.mat   Signatures x samples
+#' @param input.genomes   Mutation classes x samples
+#' @param normalize.recon Normalize to the number of mutations in the spectrum
+#' @param padding         How many samples wide the plot should be. (we'll add empty
+#'
+#' @return ToDo
+#'
+#' @importFrom graphics abline axis legend par plot points
+#' @importFrom lsa cosine
+#' @importFrom stats cor na.omit
 plot.reconstruction <-
   function(signatures, # Mutation classes x signatures
            exposures.mat, # Signatures x samples
@@ -721,20 +863,19 @@ plot.reconstruction <-
            normalize.recon, # Normalize to the number of mutations in the spectrum
            padding=0          # How many samples wide the plot should be. (we'll add empty
   ) {
-    
     num.sigs = ncol(signatures)
     num.samples = ncol(input.genomes)
     recon = signatures %*% exposures.mat
     # original matrix with mutation class counts per sample
     mat = input.genomes # as.matrix(input.genomes)
-    
+
     # Calculate reconstruction errors
     cos.sim = sapply(1:num.samples, function(i) cosine(mat[,i], recon[,i]) )
     pearson.cor = sapply(1:num.samples, function(i) cor(mat[,i], recon[,i], method='pearson') )
-    
+
     # Euclidian distance
     Eu.dist = apply(mat - recon, 2, function(x) sqrt(sum((x)^2)) ) # raw dist
-    
+
     # KL divergence:
     norm.mat = mat/colSums(mat) # normalized by total number of mutations
     norm.recon = recon/sum(recon)
@@ -748,16 +889,20 @@ plot.reconstruction <-
                        log(norm.mat[!zero,i]/norm.recon[!zero,i]) )
       }
     }
-    
+
     if (normalize.recon) {
       Eu.dist <- Eu.dist / colSums(mat)
       # kl <- kl / colSums(mat)
     }
-    
+
     if (padding && ncol(mat) < padding) {
       # add empty columns so that reconstruction error plots have the
       # samples lined up with the exposure/proportion plots. (Eg if plotting
       # 50 samples at a time, and last figure only has 40 samples.)
+
+      # ToDo: where does dims come from?
+      dims = c(0, 42)
+      
       NAs = rep(NA, padding-dims[2])
       cos.sim = c(cos.sim, NAs)
       pearson.cor = c(pearson.cor, NAs)
@@ -767,13 +912,13 @@ plot.reconstruction <-
     # don't need so much top/bottom margin space for these 2 plots
     # new.mar = par('mar'); new.mar[1] = 2; new.mar[3] = 2
     # old.pars = par(mar=new.mar)
-    
+
     # plot the cosine and pearson on the same figure, since they are both 0<=x<=1
-    
+
     y.low <- min(c(cos.sim, pearson.cor)) - 0.1
-    
+
     if (is.na(y.low)) {y.low = 0}
-    
+
     plot(cos.sim, type='p', pch=16, col='grey50', main='Reconstruction error',
          ylim=c(y.low, 1),
          xlab='',
@@ -789,8 +934,8 @@ plot.reconstruction <-
     legend(0.1 * length(cos.sim), y.low + (1 - y.low) * .25,
            legend=c('Cosine similarity',"Pearson corr."),
            col=c('grey50','black'), pch=c(16,1), xpd=NA, bty='n')
-    
-    
+
+
     if (normalize.recon) {
       Eu.label = 'Euclidean dist / number of mutations'
       # kl.label = 'KL divergence / number of mutations'
@@ -815,12 +960,14 @@ plot.reconstruction <-
     legend(0.1 * length(kl), 0.25 * eu.max,legend=c(Eu.label, kl.label),
            col=c('red', 'blue'), pch=16, xpd=NA, bty='n')
     ## add text to second y axis
-    
+
     axis(4, ylim=c(0, eu.max), col.axis='red', las=1)
-    
-  }
+}
 
 
+#' ToDo: document this function!
+#'
+#' @return ToDo
 flat.64.opportunity = function() {
   # don't weight - set all to 1
   base.frequencies.triplets = data.frame(occurrences=rep(1/64, 64))
@@ -832,6 +979,15 @@ flat.64.opportunity = function() {
   return(base.frequencies.triplets)
 }
 
+
+#' ToDo: document this function!
+#'
+#' @param path ToDo
+#'
+#' @return ToDo
+#'
+#' @importFrom grDevices pdf
+#' @importFrom graphics par
 spectrum.plot.pdf.setup <- function(path) {
   pdf(path, width=8.2677, height=11.6929, onefile=T, useDingbats = F) # for A4
   par(
@@ -841,11 +997,22 @@ spectrum.plot.pdf.setup <- function(path) {
   )
 }
 
-### Example call
-### 
-### plot.one.exome('test.exome.pdf',
-###                exome.100[ , 1, drop=F],
-###                 exome.op=.h19.96.sureselect.v6.op)
+
+#' ToDo: document this function!
+#'
+#' @param path             ToDo
+#' @param spec             ToDo
+#' @param exome.op         ToDo
+#' @param show.class.names ToDo
+#'
+#' @return ToDo
+#'
+#' @importFrom grDevices dev.off
+#'
+#' @examples
+#' \dontrun{
+#'   plot.one.exome('test.exome.pdf', exome.100[ , 1, drop=F], exome.op=.h19.96.sureselect.v6.op)
+#' }
 plot.one.exome <- function(path, spec, exome.op, show.class.names=F) {
   save.name <- colnames(spec)
 
@@ -872,11 +1039,21 @@ plot.one.exome <- function(path, spec, exome.op, show.class.names=F) {
   dev.off()
 }
 
-### Example call
-### 
-### plot.one.genome('test.genome.pdf', 
-###                  genome.100[ , 1, drop=F], 
-###                  exome.op=.h19.96.sureselect.v6.op)
+
+#' ToDo: document this function!
+#'
+#' @param path     ToDo
+#' @param spec     ToDo
+#' @param exome.op ToDo
+#'
+#' @return ToDo
+#'
+#' @importFrom grDevices dev.off
+#'
+#' @examples
+#' \dontrun{
+#'   plot.one.genome('test.genome.pdf', genome.100[ , 1, drop=F], exome.op=.h19.96.sureselect.v6.op)
+#' }
 plot.one.genome <- function(path, spec, exome.op) {
   save.name <- colnames(spec)
 
@@ -893,44 +1070,4 @@ plot.one.genome <- function(path, spec, exome.op) {
                  show.x.labels = T)
 
   dev.off()
-
-  }
-
-# FIX ME, MOVE THIS TO mSigActTesR
-test.sig.spec.transform <- function(in.wgs.spec) {
-
-  flat.spec <-
-    transform.96.sig.op1.op2(input.sig.mat = in.wgs.spec,
-                             in.op = .h19.96.WGS.op, out.op = .flat.96.op)
-  new.wgs.spec <-
-    transform.96.sig.op1.op2(input.sig.mat = flat.spec,
-                             in.op = .flat.96.op, out.op=.h19.96.WGS.op)
-
-  stopifnot(abs(new.wgs.spec - in.wgs.spec) < 1e-12)
-
-  wes.from.flat.spec <-
-    transform.96.sig.op1.op2(input.sig.mat = flat.spec,
-                             in.op = .flat.96.op,
-                             out.op = .h19.96.sureselect.v2.op)
-
-  flat.from.wes.spec <-
-    transform.96.sig.op1.op2(input.sig.mat = wes.from.flat.spec,
-                             out.op = .flat.96.op,
-                             in.op = .h19.96.sureselect.v2.op)
-
-  stopifnot(abs(flat.spec - flat.from.wes.spec) < 1e-12)
-
-  wgs.from.wes.spec <-
-    transform.96.sig.op1.op2(input.sig.mat = wes.from.flat.spec,
-                             out.op = .h19.96.WGS.op,
-                             in.op = .h19.96.sureselect.v2.op)
-
-  stopifnot(abs(wgs.from.wes.spec - in.wgs.spec) < 1e-12)
-
-  wes.from.wgs.spec <-
-    transform.96.sig.op1.op2(input.sig.mat = in.wgs.spec,
-                             in.op = .h19.96.WGS.op,
-                             out.op = .h19.96.sureselect.v2.op)
-
-  stopifnot(abs(wes.from.wgs.spec - wes.from.flat.spec) < 1e-12)
 }
