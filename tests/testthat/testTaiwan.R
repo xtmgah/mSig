@@ -1,64 +1,47 @@
-# #
-# # mSigActTest
-# #
-# # 2017 05 30
-# #
-# # Tests for mSigAct
-#
-# #source('mSigTools.R')
-# #source('mSigAct.v0.4.R')
-#
-# # Get signatures
-#
-# cosmic.sigs <- get.COSMIC.signatures()
-# cosmic.wes <- cosmic.sigs$exome
-# cosmic.wgs <- cosmic.sigs$genome
-#
-# liver.sig.names <- paste('Signature',
-#                          c(1, 4, 5, 6,
-#                            12, 16, 17, 'AA', 23,
-#                            24),
-#                          sep = '.')
-#
-# liver.wes.sigs <- cosmic.wes[, liver.sig.names]
-# liver.wgs.sigs <- cosmic.wgs[, liver.sig.names]
-#
-# paper.liver.sig.names <- paste('Signature', c(1, 4, 5, 6, 12, 16, 17, 23, 24, 'W6', 'AA'), sep = '.')
-#
-# paper.liver.wes.sigs <- cosmic.wes[, paper.liver.sig.names]
-# paper.liver.wgs.sigs <- cosmic.wgs[, paper.liver.sig.names]
-#
-# ## Load a WES data set for testing
-#
-# tmp.taiwan <- read.and.prep.192.duke.nus.catalog('Poon_et_all_HCC_spectrum_counts.tsv')$channel.96
-# taiwan.hcc <- sort.spectra.columns(tmp.taiwan)
-# rm(tmp.taiwan)
-#
-# short.taiwan.hcc <- taiwan.hcc[ , (ncol(taiwan.hcc)-10):ncol(taiwan.hcc)]
-# xtract.col.tw <- function(sample.name) {
-#   xtract.col(taiwan.hcc, sample.name)
-# }
-#
-# # This is exactly the same test as in mSigAct.basic.test
-# # The only difference is that we read in the data from files.
-# short.taiwan.analysis <-
-#   run.mSigAct(spectra=short.taiwan.hcc,
-#                     sigs=liver.wes.sigs,
-#                     target.sig.name='Signature.AA',
-#                     path.root='mSigActTest-SHORT-WES',
-#                     obj.fun=obj.fun.nbinom.maxlh,
-#                     nbinom.size=5,
-#                     mc.cores=1)
-#
-# expected.short.pval <-
-#   structure(c(0.036297099364187, 0.76185665842143, 0.000540732195433939,
-#               0.999999809769497, 0.000672367936677276, 0.999997831038551, 0.120653696546247,
-#               0.996613255999323, 0.801907129656769, 1.68741386815852e-05, 1.46775631766299e-05
-#   ), .Names = c("T68", "T41", "T74", "T16", "T46", "T82", "T50",
-#                 "T15", "T24", "T80", "T95"))
-#
-# stopifnot(all.equal(short.taiwan.analysis$pval, expected.short.pval, tolerance = 0.005))
-#
+library(mSigAct)
+context("Taiwan test")
+
+test_that("taiwan analysis", {
+  # Load signatures
+  cosmic.sigs     <- get.signatures( signature.file = "../data/COSMIC_plus_W6.tsv"
+                                   , exome.op       = .h19.96.sureselect.v6.op
+                                   )
+  cosmic.wes      <- cosmic.sigs$exome
+  liver.sig.names <- paste( 'Signature'
+                          , c(1, 4, 5, 6, 12, 16, 17, 22, 23, 24, "W6")
+                          , sep = '.'
+                          )
+  liver.wes.sigs  <- cosmic.wes[, liver.sig.names]
+
+  ## Load a WES data set for testing
+  tmp.taiwan       <- read.and.prep.192.duke.nus.catalog('../data/taiwan.HCC.spectra.tsv')$channel.96
+  taiwan.hcc       <- sort.spectra.columns(tmp.taiwan)
+  short.taiwan.hcc <- taiwan.hcc[ , (ncol(taiwan.hcc)-10):ncol(taiwan.hcc)]
+
+  # This is exactly the same test as in mSigAct.basic.test
+  # The only difference is that we read in the data from files.
+  short.taiwan.analysis <- run.mSigAct( spectra         = short.taiwan.hcc
+                                      , sigs            = liver.wes.sigs
+                                      , target.sig.name = 'Signature.22'
+                                      , path.root       = 'mSigActTest-SHORT-WES'
+                                      , obj.fun         = obj.fun.nbinom.maxlh
+                                      , nbinom.size     = 5
+                                      , mc.cores        = 1
+                                      )
+
+  expect_equal(short.taiwan.analysis$pval["T68"], 0.036297099364187, tolerance = 0.005)
+  expect_equal(short.taiwan.analysis$pval["T41"], 0.76185665842143, tolerance = 0.005)
+  expect_equal(short.taiwan.analysis$pval["T74"], 0.000540732195433939, tolerance = 0.005)
+  expect_equal(short.taiwan.analysis$pval["T16"], 0.999999809769497, tolerance = 0.005)
+  expect_equal(short.taiwan.analysis$pval["T46"], 0.000672367936677276, tolerance = 0.005)
+  expect_equal(short.taiwan.analysis$pval["T82"], 0.999997831038551, tolerance = 0.005)
+  expect_equal(short.taiwan.analysis$pval["T50"], 0.120653696546247, tolerance = 0.005)
+  expect_equal(short.taiwan.analysis$pval["T15"], 0.996613255999323, tolerance = 0.005)
+  expect_equal(short.taiwan.analysis$pval["T24"], 0.801907129656769, tolerance = 0.005)
+  expect_equal(short.taiwan.analysis$pval["T80"], 1.68741386815852e-05, tolerance = 0.005)
+  expect_equal(short.taiwan.analysis$pval["T95"], 1.46775631766299e-05, tolerance = 0.005)
+})
+
 # expected.exp <-
 #   structure(c(10.5883215430212, 0, 43.0167421150595, 0, 0, 0, 0,
 #               6.39493634191927, 0, 0, 0, 0, 57, 0, 0, 0, 0, 0, 0, 0, 0, 0,

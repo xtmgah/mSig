@@ -28,8 +28,8 @@ if (!(R.version$minor >= "3.2")) stop("mSigAct only works with R 3.2 or newer")
 #' *proportional* reconstruction; in general, it is *not necessarily* scaled to
 #' the actual spectrum counts.
 #'
-#' @param sigs  signatures
-#' @param exp   exposures to those signatures
+#' @param sigs signatures
+#' @param exp  exposures to those signatures
 #'
 #' @return ToDo
 prop.reconstruct <- function(sigs, exp) {
@@ -82,6 +82,7 @@ obj.fun.nbinom.maxlh <- function(exp,
   stopifnot(mode(loglh) == 'numeric' )
   -loglh
 }
+
 
 #' Use nloptr (numerical non-linear optimization) to find an assignmeent of
 #' signature activites for one tumor. The nlpotr algorithm and the objective
@@ -179,10 +180,12 @@ one.lh.and.exp <- function(spect,
   list(loglh=-loglh, exposure=exp)
 }
 
+
 # ToDo: what are the following to comments doing here?
 ## Assign activities and test whether signature activities can be removed
 
 ## Breadth-first first search down to fixed number of levels
+
 
 #' Helper function: is the set 'probe' a superset of any set in 'background'?
 #'

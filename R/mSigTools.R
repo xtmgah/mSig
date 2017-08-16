@@ -902,7 +902,7 @@ plot.reconstruction <-
 
       # ToDo: where does dims come from?
       dims = c(0, 42)
-      
+
       NAs = rep(NA, padding-dims[2])
       cos.sim = c(cos.sim, NAs)
       pearson.cor = c(pearson.cor, NAs)
