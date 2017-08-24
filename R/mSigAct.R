@@ -1,22 +1,18 @@
-#'
-#' mSigAct.R
-#'
-#' v 0.9
-#'
-#' 2017 08 11
-#'
-#' Copyright 2017 by Alvin Wei Tian Ng, Steven G. Rozen
-#'
-#' The code is released under GPL-3
-#' https://www.gnu.org/licenses/gpl-3.0.en.html
-#'
-#' This file contains functions for sparse maximum likelihood assignment of
-#' mutational signature activities and for testing whether a given signature is
-#' needed to explain a spectrum
-
-# Check R version and dependencies
-if (!(R.version$major >= "3")) stop("mSigAct only works with R 3.2 or newer")
-if (!(R.version$minor >= "3.2")) stop("mSigAct only works with R 3.2 or newer")
+#
+# mSigAct.R
+#
+# v 0.9
+#
+# 2017 08 11
+#
+# Copyright 2017 by Alvin Wei Tian Ng, Steven G. Rozen
+#
+# The code is released under GPL-3
+# https://www.gnu.org/licenses/gpl-3.0.en.html
+#
+# This file contains functions for sparse maximum likelihood assignment of
+# mutational signature activities and for testing whether a given signature is
+# needed to explain a spectrum
 
 
 #' Helper function, given signatures (sigs) and exposures (exp), return a
@@ -500,26 +496,25 @@ plot.recon.by.range <- function(path,
 #'
 #' Test and plot one group of spectra
 #'
-#' ToDo: don't do this! let the user decide whether (s)he wants the side-effects
-#'       or not. use a flag to turn this on/off!
-#'
-#' Side effects are to generate 4 pdfs based on the input argument
-#' path.root. The names are:
-#' <path.root>.check.with.sig.pdf
-#' <path.root>.pos.with.sig.pdf ## FIX ME, probably removed
-#' <path.root>.exposures.pdf
-#' <path.root>.reconstruction.err.pdf
+#' Generates 4 PDFs based on the input argument out.dir and out.prefix.
+#' The generated files are:
+#'  * <out.dir>/<out.prefix>.check.with.sig.pdf
+#'  * <out.dir>/<out.prefix>.exposures.pdf
+#'  * <out.dir>/<out.prefix>.pval.histogram.pdf
+#'  * <out.dir>/<out.prefix>.reconstruction.err.pdf
 #'
 #' @param spectra         ToDo
 #' @param sigs            ToDo
 #' @param target.sig.name ToDo
-#' @param path.root       ToDo
-#' @param obj.fun         ToDo
+#' @param out.dir         Path to the output directory for PDFs. PDFs will be
+#'                        generated if and only if an outdir is specified.
+#' @param out.prefix      Prefix for the output files. Will be prepended to the
+#'                        names of the generated PDFs if out.dir is specified.
 #' @param nbinom.size     ToDo
-#' @param trace           ToDo
+#' @param obj.fun         ToDo
+#' @param trace           Prints debug output if trace > 0. ToDo: why is this an integer?!
 #' @param col             ToDo
-#' @param mc.cores        ToDo
-#' @param generate.pdfs   Whether to generate pdfs or not.
+#' @param mc.cores        Number of cores to use for computations.
 #'
 #' @return ToDo: Output is an R a list with the elements: pval, exposure
 #'
@@ -528,92 +523,100 @@ plot.recon.by.range <- function(path,
 #' @importFrom parallel mclapply
 #'
 #' @export
-run.mSigAct <- function(spectra,
-                        sigs,
-                        target.sig.name,
-                        path.root,
-                        obj.fun=obj.fun.nbinom.maxlh,
-                        nbinom.size,
-                        trace=0,
-                        col=NULL,
-                        mc.cores=1,
-                        generate.pdfs = FALSE) {
-
+run.mSigAct <- function( spectra
+                       , sigs
+                       , target.sig.name
+                       , nbinom.size
+                       , out.dir       = NULL
+                       , out.prefix    = ""
+                       , obj.fun       = obj.fun.nbinom.maxlh
+                       , trace         = 0
+                       , col           = NULL
+                       , mc.cores      = 1
+                       )
+{
   target.sig.index <- which(colnames(sigs) == target.sig.name)
 
-  # Need to match exactly one signature name
-  # ToDo: should stopifnot really be used in production code?
-  stopifnot(length(target.sig.index) == 1)
+  # If an output dir was given, it should exist
+  if (!is.null(out.dir) && !dir.exists(out.dir))
+    stop("The specified output directory does not exist!", call. = FALSE)
 
-  s.spectra <- spectra.columns.sort(spectra)
+  # The target signature must be in the set of given signatures
+  if (!(target.sig.name %in% colnames(sigs)))
+    stop("The target signature is not in the set of given signatures!", call. = FALSE)
+
+  # Need to match exactly one signature name
+  if (length(target.sig.index) != 1)
+    stop("The target signature must be exactly one signature!", call. = FALSE)
+
+  s.spectra         <- spectra.columns.sort(spectra)
   s.spectra.to.list <- split(t(s.spectra), 1:ncol(s.spectra))
 
-  out.pvals <-
-      mclapply(
-          X=s.spectra.to.list,
-          FUN=signature.presence.test,
-          sigs=sigs,
-          target.sig.index=target.sig.index,
-          trace=trace,
-          obj.fun=obj.fun,
-          nbinom.size=nbinom.size,
-          mc.cores=mc.cores)
+  out.pvals <- mclapply( X                = s.spectra.to.list
+                       , FUN              = signature.presence.test
+                       , sigs             = sigs
+                       , target.sig.index = target.sig.index
+                       , trace            = trace
+                       , obj.fun          = obj.fun
+                       , nbinom.size      = nbinom.size
+                       , mc.cores         = mc.cores
+                       )
 
-  out.pvals  <- unlist(out.pvals)
-  names(out.pvals)  <- colnames(s.spectra)
+  out.pvals        <- unlist(out.pvals)
+  names(out.pvals) <- colnames(s.spectra)
 
   low.pval <- which(out.pvals < 0.05)
-  if (generate.pdfs && length(low.pval) > 0) {
+  if (!is.null(out.dir) && length(low.pval) > 0)
+  {
     # Have to wrap column-wise index of s.spectra in as.matrix in case
     # length(low.pval) == 1, in which case indexing returns a vector
 
     check.w.sig <- s.spectra[, low.pval, drop=F]
     # The column names are lost if length(low.pval) == 1
     colnames(check.w.sig) = colnames(s.spectra)[low.pval]
-    spec.path <- paste(path.root, 'check.with.sig.pdf', sep='.')
-    pdf.mut.sig.profile(path=spec.path, check.w.sig)
+    spec.path <- file.path(out.dir, paste(out.prefix, 'check.with.sig.pdf', sep = "."))
+    pdf.mut.sig.profile(path = spec.path, check.w.sig)
   }
 
-  out.exp <-
-      mclapply(
-          X=s.spectra.to.list,
-          FUN=sparse.assign.activity,
-          sigs=sigs,
-          obj.fun=obj.fun,
-          nbinom.size=nbinom.size,
-          mc.cores=mc.cores)
+  out.exp <- mclapply( X           = s.spectra.to.list
+                     , FUN         = sparse.assign.activity
+                     , sigs        = sigs
+                     , obj.fun     = obj.fun
+                     , nbinom.size = nbinom.size
+                     , mc.cores    = mc.cores
+                     )
 
   out.exp  <-  do.call(cbind, out.exp)
   colnames(out.exp)  <-  colnames(s.spectra)
   sanity.check.ex(s.spectra, sigs, out.exp)
 
-  # Plotting part
-  if (generate.pdfs)
+  # Generate PDFs if an outdir was given
+  if (!is.null(out.dir))
   {
-    hist.path <- paste(path.root, 'pval.histogram.pdf', sep='.')
+    # Histogram
+    hist.path <- file.path(out.dir, paste(out.prefix, 'pval.histogram.pdf', sep = "."))
     pdf(hist.path, useDingbats = F)
-    hist(out.pvals, breaks=seq(from=0, to=1, by=0.01))
+    hist(out.pvals, breaks = seq(from = 0, to = 1, by = 0.01))
     dev.off()
 
+    # Exposures
     approx.num.per.row <- 30
-    starts <- seq(from=1, to=ncol(s.spectra), by=approx.num.per.row)
-    ranges <-
-      lapply(starts,
-             function(x) {
-               x:(min(x+approx.num.per.row-1, ncol(s.spectra)))
-               } )
-    exp.path <- paste(path.root, 'exposures.pdf', sep='.')
-    pdf.ex.by.range(exp.path, s.spectra, sigs, exp=out.exp,
-                    range=ranges, col=col)
-    recon.path <- paste(path.root, 'reconstruction.err.pdf', sep='.')
+    starts <- seq(from = 1, to = ncol(s.spectra), by = approx.num.per.row)
+    ranges <- lapply(starts, function(x) { x:(min(x + approx.num.per.row - 1, ncol(s.spectra))) } )
+    exp.path <- file.path(out.dir, paste(out.prefix, 'exposures.pdf', sep="."))
+    pdf.ex.by.range(exp.path, s.spectra, sigs, exp = out.exp, range = ranges, col = col)
 
-    plot.recon.by.range(recon.path, s.spectra,
-                        sigs,
-                        out.exp,
-                        range = ranges,
-                        obj.fun=obj.fun,
-                        nbinom.size=nbinom.size)
+    # Reconstruction
+    recon.path <- file.path(out.dir, paste(out.prefix, 'reconstruction.err.pdf', sep = "."))
+    plot.recon.by.range( recon.path
+                       , s.spectra
+                       , sigs
+                       , out.exp
+                       , range       = ranges
+                       , obj.fun     = obj.fun
+                       , nbinom.size = nbinom.size
+                       )
   }
 
-  list(pval=out.pvals, exposure=out.exp)
+  list(pval = out.pvals, exposure = out.exp)
 }

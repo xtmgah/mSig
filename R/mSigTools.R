@@ -1,20 +1,16 @@
-#'
-#' mSigTools
-#'
-#' v0.8
-#'
-#' An alpha version
-#'
-#' 2017 08 11
-#'
-#' Copyright 2017 by Alvin Wei Tian Ng, Steven G. Rozen
-#'
-#' The code is released under GPL-3
-#' https://www.gnu.org/licenses/gpl-3.0.en.html
-
-# Dependencies
-#library(stringi)
-#library('lsa') # for cosine()
+#
+# mSigTools
+#
+# v0.8
+#
+# An alpha version
+#
+# 2017 08 11
+#
+# Copyright 2017 by Alvin Wei Tian Ng, Steven G. Rozen
+#
+# The code is released under GPL-3
+# https://www.gnu.org/licenses/gpl-3.0.en.html
 
 
 #' ToDo: document this function!
