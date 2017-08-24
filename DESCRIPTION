@@ -1,7 +1,13 @@
 Package: mSigAct
 Title: What the Package Does (one line, title case)
 Version: 0.0.0.9000
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
+Authors@R: c(person("Steve", "Rozen", email = "steve@steverozen.net", role = c("aut", "cre")),
+             person("Alvin", "Ng", role = "aut"),
+             person("Christopher", "Blöcker", role = "aut"))
+Author: Steve Rozen [aut, cre],
+  Alvin Ng [aut],
+  Christopher Blöcker [aut]
+Maintainer: Steve Rozen <steve@steverozen.net>
 Description: What the package does (one paragraph).
 Depends: R (>= 3.3.2), grDevices, graphics, lsa, nloptr, parallel, sets, stats, stringi, utils
 Suggests: testthat

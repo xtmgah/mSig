@@ -56,7 +56,7 @@ xtract.col <- function(spec, sample.name.or.index) {
 ######################################
 
 #' ToDo: document this value.
-.canonical.96.row.order <-
+canonical.96.row.order <-
   c("ACAA", "ACCA", "ACGA", "ACTA", "CCAA", "CCCA", "CCGA", "CCTA",
     "GCAA", "GCCA", "GCGA", "GCTA", "TCAA", "TCCA", "TCGA", "TCTA",
     "ACAG", "ACCG", "ACGG", "ACTG", "CCAG", "CCCG", "CCGG", "CCTG",
@@ -78,6 +78,8 @@ xtract.col <- function(spec, sample.name.or.index) {
 #' @return ToDo
 #'
 #' @importFrom utils read.table
+#'
+#' @export
 read.96.ludmil.format <- function(path) {
   cos <- read.table(path,
                     stringsAsFactors = F,
@@ -94,7 +96,7 @@ read.96.ludmil.format <- function(path) {
   out <- cos[ ,-(1:2)]
   out <- as.matrix(out)
   if (ncol(out) == 1) colnames(out) <- colnames(cos)[3]
-  out[.canonical.96.row.order, drop=F]
+  out[canonical.96.row.order, drop=F]
 }
 
 
@@ -107,6 +109,8 @@ read.96.ludmil.format <- function(path) {
 #' @return ToDo
 #'
 #' @importFrom utils read.table
+#'
+#' @export
 read.96.duke.nus.format <- function(path) {
   cos <- read.table(path,
                     stringsAsFactors = F,
@@ -121,7 +125,7 @@ read.96.duke.nus.format <- function(path) {
   tmp <- paste(cos$Before, cos$Ref, cos$After, cos$Var, sep='')
   rownames(cos) <- tmp
   out <- as.matrix(cos[ ,-(1:4), drop=F])
-  out[.canonical.96.row.order, drop=F,]
+  out[canonical.96.row.order, drop=F,]
 }
 
 
@@ -132,6 +136,8 @@ read.96.duke.nus.format <- function(path) {
 #' @return ToDo
 #'
 #' @importFrom utils read.table
+#'
+#' @export
 read.and.prep.192.duke.nus.catalog <- function(path) {
   df <- read.table(path,
                        stringsAsFactors = F,
@@ -163,7 +169,7 @@ read.and.prep.192.duke.nus.catalog <- function(path) {
   out <- as.matrix(out)
   out.order <- order(margin.table(out, 2), colnames(out), decreasing = T)
   out2 <- out[ , out.order]
-  stopifnot(rownames(out2) == .canonical.96.row.order)
+  stopifnot(rownames(out2) == canonical.96.row.order)
   list(channel.96=out2, channel.192=df)
 }
 
@@ -191,7 +197,9 @@ duke.nus.rownames.to.cols <- function(mat.or.df) {
 #' @param spectrum ToDo
 #'
 #' @return ToDo
-sort.spectra.columns <- function(spectrum) {
+#'
+#' @export
+spectra.columns.sort <- function(spectrum) {
   if (ncol(spectrum) <= 1) return(spectrum) # ncol can be 0, or 1
   spect.total <- margin.table(spectrum, 2)
   spect.order <- order(spect.total, colnames(spectrum), method='radix', decreasing = c(T, F))
@@ -339,16 +347,15 @@ read.opportunity <- function(path) {
   tmp
 }
 
-.h19.96.WGS.op           <-
-  read.opportunity('opportunity/triplet_counts-genome-hg19.tsv')
-.h19.96.sureselect.v2.op <-
-  read.opportunity("opportunity/triplet_counts-SureselectV2-hg19.tsv")
-.h19.96.sureselect.v6.op <-
-  read.opportunity("opportunity/triplet_counts-SureselectV6-hg19.tsv")
-.flat.96.op              <- .h19.96.WGS.op
-.flat.96.op[ , 'prop']   <- 1/32
-.flat.96.op[ , 'occurrences'] <-
-  sum(.h19.96.WGS.op[ , 'occurrences']) / 32 # not sure if we need this
+# .h19.96.WGS.op           <-
+#   read.opportunity('opportunity/triplet_counts-genome-hg19.tsv')
+# .h19.96.sureselect.v2.op <-
+#   read.opportunity("opportunity/triplet_counts-SureselectV2-hg19.tsv")
+# .h19.96.sureselect.v6.op <-
+#   read.opportunity("opportunity/triplet_counts-SureselectV6-hg19.tsv")
+# .flat.96.op                   <- .h19.96.WGS.op
+# .flat.96.op[ , 'prop']        <- 1/32
+# .flat.96.op[ , 'occurrences'] <- sum(.h19.96.WGS.op[ , 'occurrences']) / 32 # not sure if we need this
 
 transform.96.sig.op1.op2 <- function(input.sig.mat, in.op, out.op) {
   out.sig.mat <- input.sig.mat
@@ -387,11 +394,13 @@ transform.96.sig.op1.op2 <- function(input.sig.mat, in.op, out.op) {
 #' @param debug          ToDo
 #'
 #' @return A list of three signature matrices: WGS, WES, and "flat".
+#'
+#' @export
 get.signatures <- function(exome.op, signature.file, debug=F) {
   # Read the mutational signatures in genome frequencies
   cosmic <- read.96.duke.nus.format(signature.file)
 
-  wgs.op <- .h19.96.WGS.op
+  wgs.op <- hg19.96.WGS.op
   wes.op <- exome.op
 
   # For debugging / testing
@@ -1025,13 +1034,13 @@ plot.one.exome <- function(path, spec, exome.op, show.class.names=F) {
 
   wgs.spec <- transform.96.sig.op1.op2(input.sig.mat = spec,
                                        in.op=exome.op,
-                                       out.op = .h19.96.WGS.op)
+                                       out.op = hg19.96.WGS.op)
   colnames(wgs.spec) <- paste(save.name, 'genome', sep='-')
   t.plot.spectra(duke.nus.rownames.to.cols(wgs.spec), show.counts=F)
 
   flat.spec <- transform.96.sig.op1.op2(input.sig.mat = spec,
                                         in.op=exome.op,
-                                        out.op = .flat.96.op)
+                                        out.op = flat.96.op)
   colnames(flat.spec) <- paste(save.name, 'flat', sep='-')
   t.plot.spectra(duke.nus.rownames.to.cols(flat.spec), show.counts=F,
                  show.x.labels = T)
@@ -1062,8 +1071,8 @@ plot.one.genome <- function(path, spec, exome.op) {
   t.plot.spectra(duke.nus.rownames.to.cols(spec), show.counts=T)
 
   flat.spec <- transform.96.sig.op1.op2(input.sig.mat = spec,
-                                       out.op= .flat.96.op,
-                                       in.op = .h19.96.WGS.op)
+                                       out.op= flat.96.op,
+                                       in.op = hg19.96.WGS.op)
   colnames(flat.spec) <- paste(save.name, 'flat', sep='-')
   t.plot.spectra(duke.nus.rownames.to.cols(flat.spec),
                  show.counts=F,

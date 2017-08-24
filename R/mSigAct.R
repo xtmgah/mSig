@@ -18,11 +18,6 @@
 if (!(R.version$major >= "3")) stop("mSigAct only works with R 3.2 or newer")
 if (!(R.version$minor >= "3.2")) stop("mSigAct only works with R 3.2 or newer")
 
-# Dependencies -- ToDo: what's the proper way to define dependencies?
-#library(nloptr)
-#library(sets)
-#library(parallel)
-
 
 #' Helper function, given signatures (sigs) and exposures (exp), return a
 #' *proportional* reconstruction; in general, it is *not necessarily* scaled to
@@ -523,7 +518,8 @@ plot.recon.by.range <- function(path,
 #' @param nbinom.size     ToDo
 #' @param trace           ToDo
 #' @param col             ToDo
-#' @param mc.cores        ToDo -- what, 190?
+#' @param mc.cores        ToDo
+#' @param generate.pdfs   Whether to generate pdfs or not.
 #'
 #' @return ToDo: Output is an R a list with the elements: pval, exposure
 #'
@@ -536,18 +532,20 @@ run.mSigAct <- function(spectra,
                         sigs,
                         target.sig.name,
                         path.root,
-                        obj.fun,
+                        obj.fun=obj.fun.nbinom.maxlh,
                         nbinom.size,
                         trace=0,
                         col=NULL,
-                        mc.cores=190) {
+                        mc.cores=1,
+                        generate.pdfs = FALSE) {
 
   target.sig.index <- which(colnames(sigs) == target.sig.name)
 
   # Need to match exactly one signature name
+  # ToDo: should stopifnot really be used in production code?
   stopifnot(length(target.sig.index) == 1)
 
-  s.spectra <- sort.spectra.columns(spectra)
+  s.spectra <- spectra.columns.sort(spectra)
   s.spectra.to.list <- split(t(s.spectra), 1:ncol(s.spectra))
 
   out.pvals <-
@@ -565,7 +563,7 @@ run.mSigAct <- function(spectra,
   names(out.pvals)  <- colnames(s.spectra)
 
   low.pval <- which(out.pvals < 0.05)
-  if (length(low.pval) > 0) {
+  if (generate.pdfs && length(low.pval) > 0) {
     # Have to wrap column-wise index of s.spectra in as.matrix in case
     # length(low.pval) == 1, in which case indexing returns a vector
 
@@ -590,29 +588,32 @@ run.mSigAct <- function(spectra,
   sanity.check.ex(s.spectra, sigs, out.exp)
 
   # Plotting part
-  hist.path <- paste(path.root, 'pval.histogram.pdf', sep='.')
-  pdf(hist.path, useDingbats = F)
-  hist(out.pvals, breaks=seq(from=0, to=1, by=0.01))
-  dev.off()
+  if (generate.pdfs)
+  {
+    hist.path <- paste(path.root, 'pval.histogram.pdf', sep='.')
+    pdf(hist.path, useDingbats = F)
+    hist(out.pvals, breaks=seq(from=0, to=1, by=0.01))
+    dev.off()
 
-  approx.num.per.row <- 30
-  starts <- seq(from=1, to=ncol(s.spectra), by=approx.num.per.row)
-  ranges <-
-    lapply(starts,
-           function(x) {
-             x:(min(x+approx.num.per.row-1, ncol(s.spectra)))
-             } )
-  exp.path <- paste(path.root, 'exposures.pdf', sep='.')
-  pdf.ex.by.range(exp.path, s.spectra, sigs, exp=out.exp,
-                  range=ranges, col=col)
-  recon.path <- paste(path.root, 'reconstruction.err.pdf', sep='.')
+    approx.num.per.row <- 30
+    starts <- seq(from=1, to=ncol(s.spectra), by=approx.num.per.row)
+    ranges <-
+      lapply(starts,
+             function(x) {
+               x:(min(x+approx.num.per.row-1, ncol(s.spectra)))
+               } )
+    exp.path <- paste(path.root, 'exposures.pdf', sep='.')
+    pdf.ex.by.range(exp.path, s.spectra, sigs, exp=out.exp,
+                    range=ranges, col=col)
+    recon.path <- paste(path.root, 'reconstruction.err.pdf', sep='.')
 
-  plot.recon.by.range(recon.path, s.spectra,
-                      sigs,
-                      out.exp,
-                      range = ranges,
-                      obj.fun=obj.fun,
-                      nbinom.size=nbinom.size)
+    plot.recon.by.range(recon.path, s.spectra,
+                        sigs,
+                        out.exp,
+                        range = ranges,
+                        obj.fun=obj.fun,
+                        nbinom.size=nbinom.size)
+  }
 
   list(pval=out.pvals, exposure=out.exp)
 }
