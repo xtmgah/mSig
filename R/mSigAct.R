@@ -22,7 +22,11 @@
 #' @param sigs signatures
 #' @param exp  exposures to those signatures
 #'
+<<<<<<< HEAD
 #' @return Product of matrix-matrix multiplication of sigs and exp.
+=======
+#' @return a matrix of proportions of reconstructed mutation counts
+>>>>>>> 3b89d242b61ba28259603ec1c346c8b8384e003c
 prop.reconstruct <- function(sigs, exp) {
   stopifnot(length(exp) == ncol(sigs))
   as.matrix(sigs) %*% exp
@@ -34,10 +38,10 @@ prop.reconstruct <- function(sigs, exp) {
 #' (nloptr minimizes the objective function.)
 #' The lower the objective function, the better
 #'
-#' @param exp         the matrix of exposures ("activities")
-#' @param sigs        the matrix of signatures
-#' @param spectrum    the spectrum to assess
-#' @param nbinom.size the dispersion parameter for the negative binomial
+#' @param exp         matrix of exposures ("activities")
+#' @param sigs        matrix of signatures
+#' @param spectrum    spectrum to assess
+#' @param nbinom.size dispersion parameter for the negative binomial
 #'                    distribution: smaller is more dispersed
 #'
 #' @return -1 * the log(likelihood(spectrum | reconstruction))
@@ -79,6 +83,7 @@ obj.fun.nbinom.maxlh <- function(exp,
 #' signature activites for one tumor. The nlpotr algorithm and the objective
 #' function are arguments.
 #'
+<<<<<<< HEAD
 #' @param spectrum    ToDo
 #' @param sigs        ToDo
 #' @param algorithm   ToDo
@@ -89,6 +94,17 @@ obj.fun.nbinom.maxlh <- function(exp,
 #' @param ...         Additional arguments that are passed to obj.fun.
 #'
 #' @return ToDo
+=======
+#' @param spectrum    matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param sigs        signatures used to reconstruct the tumor 
+#' @param algorithm   algorithm for nloptr, default is \code{NLOPT_LN_COBYLA}
+#' @param maxeval     nloptr function stops when \code{maxeval} is reached
+#' @param print_level nloptr option to enable debugging \code{print_level} = 1
+#' @param xtol_rel    stopping criterion for relative change reached (see ?nloptr)
+#' @param obj.fun     objective function for evaluation
+#' @param ...         additional arguments passed to the function 
+#' @return nloptr object with the objective value, number of iterations and optimal solution
+>>>>>>> 3b89d242b61ba28259603ec1c346c8b8384e003c
 #'
 #' @importFrom nloptr nloptr
 nloptr.one.tumor <- function(spectrum,
@@ -135,19 +151,19 @@ nloptr.one.tumor <- function(spectrum,
 }
 
 
-#' ToDo: document this function!
+#' Calculates the log-likelihood and activities for 1 tumor
 #'
-#' @param spect       ToDo
-#' @param sigs        ToDo
-#' @param trace       ToDo
-#' @param algorithm   ToDo
-#' @param obj.fun     ToDo
-#' @param nbinom.size ToDo
-#'
+#' @param spect       matrix of mutation counts, 96 rows and a column for each tumor 
+#' @param sigs        signatures used to reconstruct the tumor 
+#' @param trace       trace = 1 to enable debugging
+#' @param algorithm   algorithm for nloptr, default is \code{NLOPT_LN_COBYLA}
+#' @param obj.fun     objective function for evaluation
+#' @param nbinom.size dispersion parameter for the negative binomial model
 #' @return Returns a list with elements:
 #' loglh    - the log likelihood of the best solution (set of exposures) found
 #' exposure - the vector of exposures that generate loglh, in this case
 #' 'exposure' means the number of mutations ascribed to each signature
+
 one.lh.and.exp <- function(spect,
                            sigs,
                            trace,
@@ -183,10 +199,10 @@ one.lh.and.exp <- function(spect,
 
 #' Helper function: is the set 'probe' a superset of any set in 'background'?
 #'
-#' @param probe      ToDo
-#' @param background ToDo
+#' @param probe      set to probe
+#' @param background background set of signatures
 #'
-#' @return ToDo
+#' @return TRUE if current set probe is a superset of any background set
 #'
 #' @importFrom sets set_is_proper_subset
 is.superset.of.any <- function(probe, background) {
@@ -197,17 +213,17 @@ is.superset.of.any <- function(probe, background) {
 }
 
 
-#' ToDo: document this function!
+#' Assigns activities of mutational signatures on a per-tumor basis
 #'
-#' @param spect       ToDo
-#' @param sigs        ToDo
-#' @param max.level   ToDo
-#' @param p.thresh    ToDo
-#' @param trace       ToDo
-#' @param obj.fun     ToDo
-#' @param nbinom.size ToDo
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param sigs        signatures used to reconstruct the tumor 
+#' @param max.level   maximum number of active signatures
+#' @param p.thresh    p-value threshold for significance
+#' @param trace       trace = 1 to enable debugging
+#' @param obj.fun     objective function for evaluation
+#' @param nbinom.size dispersion parameter for the negative binomial model
 #'
-#' @return ToDo
+#' @return matrix of assignments of activity to each mutational signature in \code{sigs}
 #'
 #' @importFrom sets set set_combn set_union
 #' @importFrom stats pchisq
@@ -315,17 +331,17 @@ sparse.assign.activity <- function(spect,
 }
 
 
-#' Likelihood ratio test. ToDo: extend the documentation!
+#' Likelihood ratio test for reconstruction of tumors with and without signature of interest
 #'
-#' @param spect       ToDo
-#' @param sigs        ToDo
-#' @param sig.to.test ToDo
-#' @param trace       ToDo
-#' @param algorithm   ToDo
-#' @param obj.fun     ToDo
-#' @param nbinom.size ToDo
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param sigs        signatures used to reconstruct the tumor
+#' @param sig.to.test maximum number of active signatures
+#' @param trace       trace = 1 to enable debugging
+#' @param algorithm   algorithm for nloptr, default is \code{NLOPT_LN_COBYLA}
+#' @param obj.fun     objective function for evaluation
+#' @param nbinom.size dispersion parameter for the negative binomial model
 #'
-#' @return ToDo
+#' @return list object with log-likelihoods calculated with and without signature of interest, test statistic and chi-square p-value 
 #'
 #' @importFrom stats pchisq
 #' @importFrom log4r info
@@ -357,16 +373,16 @@ is.present.p.m.likelihood <- function(spect,
 }
 
 
-#' ToDo: document this function!
+#' Calculates the chi-square p-pval of likelihoods of reconstructed mutations counts with and without the signature of interest
 #'
-#' @param spect            ToDo
-#' @param sigs             ToDo
-#' @param target.sig.index ToDo
-#' @param trace            ToDo
-#' @param obj.fun          ToDo
-#' @param nbinom.size      ToDo
+#' @param spect            matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param sigs             signatures used to reconstruct the tumor
+#' @param target.sig.index index of target signature 
+#' @param trace            trace = 1 to enable debugging
+#' @param obj.fun          objective function for evaluation
+#' @param nbinom.size      dispersion parameter for the negative binomial model
 #'
-#' @return ToDo
+#' @return a p-value for the likelihood of a target is required to reconstruct the mutation counts of a tumor
 signature.presence.test <- function(spect,
                                     sigs,
                                     target.sig.index,
@@ -381,15 +397,15 @@ signature.presence.test <- function(spect,
 }
 
 
-#' Cacluate exposures for entire set of tumors.
+#' Calculates exposures for entire set of tumors.
 #'
-#' @param spect       ToDo
-#' @param sigs        ToDo
-#' @param exp         ToDo
-#' @param obj.fun     ToDo
-#' @param nbinom.size ToDo
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param sigs        signatures used to reconstruct the tumor
+#' @param exp         exposure or activity used to reconstruct a tumor
+#' @param obj.fun     objective function for evaluation
+#' @param nbinom.size dispersion parameter for the negative binomial model
 #'
-#' @return ToDo
+#' @return a list of negative log-likelihoods of the reconstructed matrices 
 compute.all.neg.log.lh <- function(spect,
                                    sigs,
                                    exp,
@@ -406,13 +422,12 @@ compute.all.neg.log.lh <- function(spect,
 }
 
 
-#' ToDo: document this function! Is this some kind of invariant?
+#' Carries out sanity check on the signature and activity matrices from the mSigAct reconstructions
 #'
-#' @param spectrum ToDo
-#' @param sigs     ToDo
-#' @param exposure ToDo
-#'
-#' @return ToDo
+#' @param spectrum matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param sigs     signatures used to reconstruct the tumor
+#' @param exposure exposure or activity used to reconstruct a tumor
+ 
 sanity.check.ex <- function(spectrum, sigs, exposure) {
   ex.sums <- margin.table(exposure, 2)
   all.reconstruct <- as.matrix(sigs)  %*% exposure
@@ -423,16 +438,16 @@ sanity.check.ex <- function(spectrum, sigs, exposure) {
 }
 
 
-#' ToDo: document this function!
+#' Plots reconstruction of log-likelihoods of reconstructed tumors 
 #'
-#' @param spect       ToDo
-#' @param sigs        ToDo
-#' @param ex          ToDo
-#' @param range       ToDo
-#' @param obj.fun     ToDo
-#' @param nbinom.size ToDo
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param sigs        signatures used to reconstruct the tumor
+#' @param ex          exposure or activity used to reconstruct a tumor
+#' @param range       range of tumors to plot reconstruction
+#' @param obj.fun     objective function for evaluation
+#' @param nbinom.size dispersion parameter for the negative binomial model
 #'
-#' @return ToDo
+#' @return reconstruction plots with negative log-likelihoods
 #'
 #' @importFrom graphics abline axis plot
 plot.recon.and.loglh <- function(spect,
@@ -461,17 +476,17 @@ plot.recon.and.loglh <- function(spect,
 
 
 #' plot.recon.by.range calls the objective function as one of its analyses.
-#' ToDo: provide a useful documentation!
+#' Plots reconstruction of log-likelihoods of for a range of reconstructed tumors 
 #'
-#' @param path        ToDo
-#' @param spect       ToDo
-#' @param sigs        ToDo
-#' @param ex          ToDo
-#' @param range       ToDo
-#' @param obj.fun     ToDo
-#' @param nbinom.size ToDo
+#' @param path        path for pdfs to be saved
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param sigs        signatures used to reconstruct the tumor
+#' @param ex          exposure or activity used to reconstruct a tumor
+#' @param range       range of tumors to plot reconstruction
+#' @param obj.fun     objective function for evaluation
+#' @param nbinom.size dispersion parameter for the negative binomial model
 #'
-#' @return ToDo
+#' @return T
 #'
 #' @importFrom grDevices cairo_pdf dev.off
 plot.recon.by.range <- function(path,
@@ -510,22 +525,27 @@ plot.recon.by.range <- function(path,
 #'  * <out.dir>/<out.prefix>.pval.histogram.pdf
 #'  * <out.dir>/<out.prefix>.reconstruction.err.pdf
 #'
-#' @param spectra         ToDo
-#' @param sigs            ToDo
-#' @param target.sig.name ToDo
+#' @param spectra         matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param sigs            signatures used to reconstruct the tumor
+#' @param target.sig.name name of signature to be tested
 #' @param out.dir         Path to the output directory for PDFs. PDFs will be
 #'                        generated if and only if an outdir is specified.
 #' @param out.prefix      Prefix for the output files. Will be prepended to the
 #'                        names of the generated PDFs if out.dir is specified.
+<<<<<<< HEAD
 #' @param nbinom.size     ToDo
 #' @param obj.fun         ToDo
 #' @param loglevel        Defines the loglevel and what messages to print to the
 #'                        log. Valid options: INFO, WARN, ERROR. Default: ERROR.
+=======
+#' @param nbinom.size     dispersion parameter for the negative binomial
+#' @param obj.fun         objective function for evaluation
+>>>>>>> 3b89d242b61ba28259603ec1c346c8b8384e003c
 #' @param trace           Prints debug output if trace > 0. ToDo: why is this an integer?!
-#' @param col             ToDo
+#' @param col             ## is this used?
 #' @param mc.cores        Number of cores to use for computations.
 #'
-#' @return ToDo: Output is an R a list with the elements: pval, exposure
+#' @return Output is an R a list with the elements: pval, exposure
 #'
 #' @importFrom grDevices pdf dev.off
 #' @importFrom graphics hist
