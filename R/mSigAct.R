@@ -22,11 +22,7 @@
 #' @param sigs signatures
 #' @param exp  exposures to those signatures
 #'
-<<<<<<< HEAD
-#' @return Product of matrix-matrix multiplication of sigs and exp.
-=======
 #' @return a matrix of proportions of reconstructed mutation counts
->>>>>>> 3b89d242b61ba28259603ec1c346c8b8384e003c
 prop.reconstruct <- function(sigs, exp) {
   stopifnot(length(exp) == ncol(sigs))
   as.matrix(sigs) %*% exp
@@ -83,28 +79,15 @@ obj.fun.nbinom.maxlh <- function(exp,
 #' signature activites for one tumor. The nlpotr algorithm and the objective
 #' function are arguments.
 #'
-<<<<<<< HEAD
-#' @param spectrum    ToDo
-#' @param sigs        ToDo
-#' @param algorithm   ToDo
-#' @param maxeval     ToDo
-#' @param print_level ToDo
-#' @param xtol_rel    ToDo
-#' @param obj.fun     The objective function for the non-linear optimisation.
-#' @param ...         Additional arguments that are passed to obj.fun.
-#'
-#' @return ToDo
-=======
-#' @param spectrum    matrix of mutation counts, 96 rows and a column for a tumor 
-#' @param sigs        signatures used to reconstruct the tumor 
+#' @param spectrum    matrix of mutation counts, 96 rows and a column for a tumor
+#' @param sigs        signatures used to reconstruct the tumor
 #' @param algorithm   algorithm for nloptr, default is \code{NLOPT_LN_COBYLA}
 #' @param maxeval     nloptr function stops when \code{maxeval} is reached
 #' @param print_level nloptr option to enable debugging \code{print_level} = 1
 #' @param xtol_rel    stopping criterion for relative change reached (see ?nloptr)
 #' @param obj.fun     objective function for evaluation
-#' @param ...         additional arguments passed to the function 
+#' @param ...         additional arguments passed to the function
 #' @return nloptr object with the objective value, number of iterations and optimal solution
->>>>>>> 3b89d242b61ba28259603ec1c346c8b8384e003c
 #'
 #' @importFrom nloptr nloptr
 nloptr.one.tumor <- function(spectrum,
@@ -153,8 +136,8 @@ nloptr.one.tumor <- function(spectrum,
 
 #' Calculates the log-likelihood and activities for 1 tumor
 #'
-#' @param spect       matrix of mutation counts, 96 rows and a column for each tumor 
-#' @param sigs        signatures used to reconstruct the tumor 
+#' @param spect       matrix of mutation counts, 96 rows and a column for each tumor
+#' @param sigs        signatures used to reconstruct the tumor
 #' @param trace       trace = 1 to enable debugging
 #' @param algorithm   algorithm for nloptr, default is \code{NLOPT_LN_COBYLA}
 #' @param obj.fun     objective function for evaluation
@@ -215,8 +198,8 @@ is.superset.of.any <- function(probe, background) {
 
 #' Assigns activities of mutational signatures on a per-tumor basis
 #'
-#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
-#' @param sigs        signatures used to reconstruct the tumor 
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor
+#' @param sigs        signatures used to reconstruct the tumor
 #' @param max.level   maximum number of active signatures
 #' @param p.thresh    p-value threshold for significance
 #' @param trace       trace = 1 to enable debugging
@@ -333,7 +316,7 @@ sparse.assign.activity <- function(spect,
 
 #' Likelihood ratio test for reconstruction of tumors with and without signature of interest
 #'
-#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs        signatures used to reconstruct the tumor
 #' @param sig.to.test maximum number of active signatures
 #' @param trace       trace = 1 to enable debugging
@@ -341,7 +324,7 @@ sparse.assign.activity <- function(spect,
 #' @param obj.fun     objective function for evaluation
 #' @param nbinom.size dispersion parameter for the negative binomial model
 #'
-#' @return list object with log-likelihoods calculated with and without signature of interest, test statistic and chi-square p-value 
+#' @return list object with log-likelihoods calculated with and without signature of interest, test statistic and chi-square p-value
 #'
 #' @importFrom stats pchisq
 #' @importFrom log4r info
@@ -375,9 +358,9 @@ is.present.p.m.likelihood <- function(spect,
 
 #' Calculates the chi-square p-pval of likelihoods of reconstructed mutations counts with and without the signature of interest
 #'
-#' @param spect            matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spect            matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs             signatures used to reconstruct the tumor
-#' @param target.sig.index index of target signature 
+#' @param target.sig.index index of target signature
 #' @param trace            trace = 1 to enable debugging
 #' @param obj.fun          objective function for evaluation
 #' @param nbinom.size      dispersion parameter for the negative binomial model
@@ -399,13 +382,13 @@ signature.presence.test <- function(spect,
 
 #' Calculates exposures for entire set of tumors.
 #'
-#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs        signatures used to reconstruct the tumor
 #' @param exp         exposure or activity used to reconstruct a tumor
 #' @param obj.fun     objective function for evaluation
 #' @param nbinom.size dispersion parameter for the negative binomial model
 #'
-#' @return a list of negative log-likelihoods of the reconstructed matrices 
+#' @return a list of negative log-likelihoods of the reconstructed matrices
 compute.all.neg.log.lh <- function(spect,
                                    sigs,
                                    exp,
@@ -424,10 +407,10 @@ compute.all.neg.log.lh <- function(spect,
 
 #' Carries out sanity check on the signature and activity matrices from the mSigAct reconstructions
 #'
-#' @param spectrum matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spectrum matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs     signatures used to reconstruct the tumor
 #' @param exposure exposure or activity used to reconstruct a tumor
- 
+
 sanity.check.ex <- function(spectrum, sigs, exposure) {
   ex.sums <- margin.table(exposure, 2)
   all.reconstruct <- as.matrix(sigs)  %*% exposure
@@ -438,9 +421,9 @@ sanity.check.ex <- function(spectrum, sigs, exposure) {
 }
 
 
-#' Plots reconstruction of log-likelihoods of reconstructed tumors 
+#' Plots reconstruction of log-likelihoods of reconstructed tumors
 #'
-#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs        signatures used to reconstruct the tumor
 #' @param ex          exposure or activity used to reconstruct a tumor
 #' @param range       range of tumors to plot reconstruction
@@ -476,10 +459,10 @@ plot.recon.and.loglh <- function(spect,
 
 
 #' plot.recon.by.range calls the objective function as one of its analyses.
-#' Plots reconstruction of log-likelihoods of for a range of reconstructed tumors 
+#' Plots reconstruction of log-likelihoods of for a range of reconstructed tumors
 #'
 #' @param path        path for pdfs to be saved
-#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs        signatures used to reconstruct the tumor
 #' @param ex          exposure or activity used to reconstruct a tumor
 #' @param range       range of tumors to plot reconstruction
@@ -525,22 +508,15 @@ plot.recon.by.range <- function(path,
 #'  * <out.dir>/<out.prefix>.pval.histogram.pdf
 #'  * <out.dir>/<out.prefix>.reconstruction.err.pdf
 #'
-#' @param spectra         matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spectra         matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs            signatures used to reconstruct the tumor
 #' @param target.sig.name name of signature to be tested
 #' @param out.dir         Path to the output directory for PDFs. PDFs will be
 #'                        generated if and only if an outdir is specified.
 #' @param out.prefix      Prefix for the output files. Will be prepended to the
 #'                        names of the generated PDFs if out.dir is specified.
-<<<<<<< HEAD
-#' @param nbinom.size     ToDo
-#' @param obj.fun         ToDo
-#' @param loglevel        Defines the loglevel and what messages to print to the
-#'                        log. Valid options: INFO, WARN, ERROR. Default: ERROR.
-=======
 #' @param nbinom.size     dispersion parameter for the negative binomial
 #' @param obj.fun         objective function for evaluation
->>>>>>> 3b89d242b61ba28259603ec1c346c8b8384e003c
 #' @param trace           Prints debug output if trace > 0. ToDo: why is this an integer?!
 #' @param col             ## is this used?
 #' @param mc.cores        Number of cores to use for computations.
@@ -561,14 +537,13 @@ run.mSigAct <- function( spectra
                        , out.prefix    = ""
                        , obj.fun       = obj.fun.nbinom.maxlh
                        , loglevel      = "ERROR"
+                       , logfile       = "./mSigAct.log"
                        , trace         = 0
                        , col           = NULL
                        , mc.cores      = 1
                        )
 {
-  logger           <- create.logger( logfile = "/home/chris/tmp/base.log"
-                                   , level   = loglevel
-                                   )
+  logger           <- create.logger(logfile = logfile, level = loglevel)
   target.sig.index <- which(colnames(sigs) == target.sig.name)
 
   # If an output dir was given, it should exist
