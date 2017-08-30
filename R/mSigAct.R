@@ -22,7 +22,7 @@
 #' @param sigs signatures
 #' @param exp  exposures to those signatures
 #'
-#' @return ToDo
+#' @return Product of matrix-matrix multiplication of sigs and exp.
 prop.reconstruct <- function(sigs, exp) {
   stopifnot(length(exp) == ncol(sigs))
   as.matrix(sigs) %*% exp
@@ -85,8 +85,8 @@ obj.fun.nbinom.maxlh <- function(exp,
 #' @param maxeval     ToDo
 #' @param print_level ToDo
 #' @param xtol_rel    ToDo
-#' @param obj.fun     ToDo
-#' @param ...         ToDo
+#' @param obj.fun     The objective function for the non-linear optimisation.
+#' @param ...         Additional arguments that are passed to obj.fun.
 #'
 #' @return ToDo
 #'
@@ -98,6 +98,7 @@ nloptr.one.tumor <- function(spectrum,
                              print_level=0, # ToDo: is this the same as "trace" in other functions? why give it different names?
                              xtol_rel=0.001, # 0.0001,
                              obj.fun,
+                             logger,
                              ... # additional arguments for obj.fun
                              ) {
   if (class(sigs) == 'numeric') {
@@ -152,11 +153,13 @@ one.lh.and.exp <- function(spect,
                            trace,
                            algorithm='NLOPT_LN_COBYLA',
                            obj.fun,
-                           nbinom.size) {
+                           nbinom.size,
+                           logger) {
   r <- nloptr.one.tumor(spect, sigs, maxeval=1e6,
                         xtol_rel = 1e-7,
                         algorithm=algorithm, obj.fun = obj.fun,
-                        nbinom.size=nbinom.size)
+                        nbinom.size=nbinom.size,
+                        logger=logger)
   if (trace >  0) cat(r$objective, r$iterations, sum(r$solution), '\n')
 
   loglh <- r$objective
@@ -325,24 +328,27 @@ sparse.assign.activity <- function(spect,
 #' @return ToDo
 #'
 #' @importFrom stats pchisq
+#' @importFrom log4r info
 is.present.p.m.likelihood <- function(spect,
                                       sigs,
                                       sig.to.test,
                                       trace=0,
                                       algorithm='NLOPT_LN_COBYLA',
                                       obj.fun,
-                                      nbinom.size) {
+                                      nbinom.size,
+                                      logger) {
 
   loglh.with <- one.lh.and.exp(spect, sigs, trace=trace,
                                algorithm=algorithm, obj.fun=obj.fun,
-                               nbinom.size=nbinom.size)$loglh
+                               nbinom.size=nbinom.size, logger=logger)$loglh
   loglh.without <- one.lh.and.exp(spect, sigs[ ,-sig.to.test], trace=trace,
                                   algorithm=algorithm,
                                   obj.fun=obj.fun,
-                                  nbinom.size=nbinom.size)$loglh
+                                  nbinom.size=nbinom.size, logger=logger)$loglh
   statistic <- 2 * (loglh.with - loglh.without)
   chisq.p <- pchisq(statistic, 1, lower.tail=F)
   if (trace > 0) cat('statistic  =', statistic, '\nchisq p =', chisq.p, '\n')
+  info(logger, paste0('statistic = ', statistic, ', chisq p = ', chisq.p))
 
   list(with=loglh.with,
        without=loglh.without,
@@ -366,11 +372,12 @@ signature.presence.test <- function(spect,
                                     target.sig.index,
                                     trace=0,
                                     obj.fun,
-                                    nbinom.size) {
+                                    nbinom.size,
+                                    logger) {
   is.present.p.m.likelihood(spect,
                        sigs, target.sig.index,
                        trace=trace, obj.fun=obj.fun,
-                       nbinom.size=nbinom.size)$chisq.p
+                       nbinom.size=nbinom.size, logger=logger)$chisq.p
 }
 
 
@@ -512,6 +519,8 @@ plot.recon.by.range <- function(path,
 #'                        names of the generated PDFs if out.dir is specified.
 #' @param nbinom.size     ToDo
 #' @param obj.fun         ToDo
+#' @param loglevel        Defines the loglevel and what messages to print to the
+#'                        log. Valid options: INFO, WARN, ERROR. Default: ERROR.
 #' @param trace           Prints debug output if trace > 0. ToDo: why is this an integer?!
 #' @param col             ToDo
 #' @param mc.cores        Number of cores to use for computations.
@@ -520,6 +529,7 @@ plot.recon.by.range <- function(path,
 #'
 #' @importFrom grDevices pdf dev.off
 #' @importFrom graphics hist
+#' @importFrom log4r create.logger error
 #' @importFrom parallel mclapply
 #'
 #' @export
@@ -530,16 +540,23 @@ run.mSigAct <- function( spectra
                        , out.dir       = NULL
                        , out.prefix    = ""
                        , obj.fun       = obj.fun.nbinom.maxlh
+                       , loglevel      = "ERROR"
                        , trace         = 0
                        , col           = NULL
                        , mc.cores      = 1
                        )
 {
+  logger           <- create.logger( logfile = "/home/chris/tmp/base.log"
+                                   , level   = loglevel
+                                   )
   target.sig.index <- which(colnames(sigs) == target.sig.name)
 
   # If an output dir was given, it should exist
   if (!is.null(out.dir) && !dir.exists(out.dir))
+  {
+    error(logger, "The specified output directory does not exist!")
     stop("The specified output directory does not exist!", call. = FALSE)
+  }
 
   # The target signature must be in the set of given signatures
   if (!(target.sig.name %in% colnames(sigs)))
@@ -560,6 +577,7 @@ run.mSigAct <- function( spectra
                        , obj.fun          = obj.fun
                        , nbinom.size      = nbinom.size
                        , mc.cores         = mc.cores
+                       , logger           = logger
                        )
 
   out.pvals        <- unlist(out.pvals)
