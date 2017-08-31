@@ -491,19 +491,20 @@ get_ylim = function(y) {
 #' @param show.class.names  ToDo
 #' @param all.labels        ToDo
 #' @param show.x.labels     ToDo
-#' @param trace             ToDo
 #' @param show.paren        ToDo
+#' @param logger            ToDo
 #'
 #' @return ToDo
 #'
 #' @importFrom graphics axis mtext plot plot.new rect text
+#' @importFrom log4r debug
 t.plot.spectra = function(counts.data.frame,
                          show.counts=T,
                          show.class.names=F,
                          all.labels=F,
                          show.x.labels=F,
-                         trace=F,
-                         show.paren=F) {
+                         show.paren=F,
+                         logger) {
   region <- 'genome'
 
   num.classes <- 96
@@ -523,7 +524,8 @@ t.plot.spectra = function(counts.data.frame,
   for (which.col in c(first.col:length(spectrum.names))) {
     spectrum.name = spectrum.names[which.col]
     display.name = spectrum.name
-    if (trace) cat('\rplotting', display.name, '\n')
+
+    debug(logger, paste('plotting', display.name))
 
     # get counts per (unstranded) mutation class (6 classes)
     Ref.A = counts.data.frame$Ref=='A'
@@ -544,7 +546,7 @@ t.plot.spectra = function(counts.data.frame,
     )
 
 
-    if (trace) print(unstranded.counts)
+    debug(logger, unstranded.counts)
     percents = rep(0, num.classes)
     maj.class.counter = 0 # major class. Ie B₁>B₂
     maj.class.names = c() # only those (eg C>A) present in input data
@@ -703,7 +705,6 @@ t.plot.spectra = function(counts.data.frame,
     }
 
   } # end for each spectrum
-  if (trace) cat('\n')
 }
 
 
