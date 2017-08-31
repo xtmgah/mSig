@@ -53,10 +53,8 @@ obj.fun.nbinom.maxlh <- function(exp,
   reconstruction <-  prop.reconstruct(sigs = sigs, exp = exp)
 
   ## catch errors with NA in the input or in reconstruction.
-  if (any(is.na(reconstruction))) {
-    save(reconstruction, spectrum, sigs, exp, nbinom.size,
-         file='reconstruction.error.R')
-  }
+  if (any(is.na(reconstruction)))
+    save(reconstruction, spectrum, sigs, exp, nbinom.size, file = 'reconstruction.error.R')
   stopifnot(!any(is.na(reconstruction)))
 
   loglh <- 0
@@ -70,7 +68,7 @@ obj.fun.nbinom.maxlh <- function(exp,
                       log=T)
     loglh <-loglh + nbinom
   }
-  stopifnot(mode(loglh) == 'numeric' )
+  stopifnot(mode(loglh) == 'numeric')
   -loglh
 }
 
@@ -89,6 +87,7 @@ obj.fun.nbinom.maxlh <- function(exp,
 #' @param ...         additional arguments passed to the function
 #' @return nloptr object with the objective value, number of iterations and optimal solution
 #'
+#' @importFrom log4r error
 #' @importFrom nloptr nloptr
 nloptr.one.tumor <- function(spectrum,
                              sigs,
@@ -112,7 +111,12 @@ nloptr.one.tumor <- function(spectrum,
   if (nrow(sigs)!= length(spectrum))
     save(spectrum, sigs, file='spectrum.sigs.debug.R')
 
-  stopifnot(nrow(sigs) == length(spectrum))
+  if (nrow(sigs) != length(spectrum))
+  {
+    msg = "Signatures and spectra have different length!"
+    error(logger, msg)
+    stop(msg)
+  }
 
   # x0 is uniform distribution of mutations across signatures
   # (Each signature gets the same number of mutations)
@@ -321,6 +325,12 @@ sparse.assign.activity <- function(spect,
   debug(logger, paste("Ending with", paste(names(start.exp)[best.subset], collapse = ",")))
 
   stopifnot(abs(sum(out.exp) - sum(spect)) < 2)
+  if (abs(sum(out.exp) - sum(spect)) >= 2)
+  {
+    msg = "" # ToDo: what is this error?
+    error(logger, msg)
+    stop(msg)
+  }
   out.exp
 }
 
@@ -540,7 +550,6 @@ plot.recon.by.range <- function(path,
 #' @param loglevel        loglevel to control how detailed logging should be done.
 #'                        Valid choices: DEBUG, INFO, WARN, ERROR, default: WARN.
 #' @param logfile         path to the file in which the logs should be saved
-#' @param col             ## is this used?
 #' @param mc.cores        Number of cores to use for computations.
 #'
 #' @return Output is an R a list with the elements: pval, exposure
@@ -560,7 +569,6 @@ run.mSigAct <- function( spectra
                        , obj.fun       = obj.fun.nbinom.maxlh
                        , loglevel      = "WARN"
                        , logfile       = "./mSigAct.log"
-                       , col           = NULL
                        , mc.cores      = 1
                        )
 {
@@ -651,7 +659,7 @@ run.mSigAct <- function( spectra
     starts <- seq(from = 1, to = ncol(s.spectra), by = approx.num.per.row)
     ranges <- lapply(starts, function(x) { x:(min(x + approx.num.per.row - 1, ncol(s.spectra))) } )
     exp.path <- file.path(out.dir, paste(out.prefix, 'exposures.pdf', sep="."))
-    pdf.ex.by.range(exp.path, s.spectra, sigs, exp = out.exp, range = ranges, col = col)
+    pdf.ex.by.range(exp.path, s.spectra, sigs, exp = out.exp, range = ranges)
 
     # Reconstruction
     recon.path <- file.path(out.dir, paste(out.prefix, 'reconstruction.err.pdf', sep = "."))

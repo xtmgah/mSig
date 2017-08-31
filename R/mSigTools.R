@@ -229,7 +229,6 @@ pdf.mut.sig.profile <- function(path, spec.or.sig, show.counts=F) {
 #' @param sigs     ToDo
 #' @param exp      ToDo
 #' @param ranges   ToDo
-#' @param col      ToDo
 #' @param main     ToDo
 #' @param xlab     ToDo
 #' @param ylab     ToDo
@@ -242,7 +241,6 @@ plot.ex.by.range <- function(spectrum,
                              sigs,
                              exp,
                              ranges, # A list of vectors
-                             col=NULL,
                              main=NULL,
                              xlab=NULL,
                              ylab=NULL,
@@ -261,7 +259,6 @@ plot.ex.by.range <- function(spectrum,
       plot.exposures(exp[ ,range], signatures=sigs,
                      input.genomes = spectrum[ , range],
                      plot.proprtion = F,
-                     col=col,
                      main=main,
                      ylab=ylab, xlab=xlab)
       first=F
@@ -270,7 +267,6 @@ plot.ex.by.range <- function(spectrum,
                      input.genomes = spectrum[ , range],
                      plot.proprtion = F, plot.legend=F,
                      main=main,
-                     col=col,
                      ylab=ylab, xlab=xlab)
     }
   }
@@ -284,7 +280,6 @@ plot.ex.by.range <- function(spectrum,
 #' @param sigs     ToDo
 #' @param exp      ToDo
 #' @param ranges   ToDo
-#' @param col      ToDo
 #' @param main     ToDo
 #' @param xlab     ToDo
 #' @param ylab     ToDo
@@ -297,14 +292,13 @@ pdf.ex.by.range <- function(path,   # Out file path
                             sigs,
                             exp,
                             ranges, # A list of vectors
-                            col=NULL,
                             main=NULL,
                             xlab=NULL,
                             ylab=NULL
 ) {
   pdf(path, width=8.2677, height=11.6929, # for A4
       onefile=T, useDingbats=F)
-  plot.ex.by.range(spectrum, sigs, exp, ranges, col, main, xlab, ylab)
+  plot.ex.by.range(spectrum, sigs, exp, ranges, main, xlab, ylab)
   dev.off()
 }
 
@@ -721,7 +715,6 @@ t.plot.spectra = function(counts.data.frame,
 #' @param main           ToDo
 #' @param ylab           ToDo
 #' @param xlab           ToDo
-#' @param col            ToDo
 #'
 #' @return ToDo
 #'
@@ -739,8 +732,7 @@ plot.exposures <-
            ylim=NULL,
            main=NULL,
            ylab=NULL,
-           xlab=NULL,
-           col=NULL
+           xlab=NULL
   ) {
     # note - might be reals > 1, not necessary colSum==1
     s.weights <- as.matrix(s.weights) # in case it is a data frame
@@ -748,23 +740,23 @@ plot.exposures <-
     num.sigs = dim(s.weights)[1]
     num.samples = dim(s.weights)[2]
 
-    if (is.null(col)) {
-      if (num.sigs <= 8) {
-        col = # c('skyblue', 'black', 'grey', 'yellow', 'blue', 'brown', 'green4', 'red')
-          c('red', 'black', 'grey', 'yellow', 'blue', 'brown', 'green4', 'skyblue')
+    if (num.sigs <= 8)
+      col = c('red', 'black', 'grey', 'yellow', 'blue', 'brown', 'green4', 'skyblue')
 
-      } else {
-        # lots of signatures; use shaded lines to differentiate
-        col = rainbow(num.sigs)
-      }
-    }
-    if (num.sigs <= 12) {
+    # lots of signatures; use shaded lines to differentiate
+    else
+      col = rainbow(num.sigs)
+
+    if (num.sigs <= 12)
+    {
       p.dense = -1 # will repeat as needed, -1 = solid
       p.angle = 0  # ditto
-    } else {
+    }
+    else
+    {
       # lots of signatures; use shaded lines to differentiate
       p.dense = c(-1,35,35,50,50) # will repeat as needed, -1 = solid
-      p.angle = c(0,0,135,45,135)  # ditto
+      p.angle = c(0,0,135,45,135) # ditto
     }
     # for legend, we need to put in reverse order. make sure this matches
     # order used in barplot
