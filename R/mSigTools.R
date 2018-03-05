@@ -215,11 +215,12 @@ spectra.columns.sort <- function(spectrum) {
 #' @return ToDo
 #'
 #' @importFrom grDevices dev.off
-pdf.mut.sig.profile <- function(path, spec.or.sig, show.counts=F) {
+pdf.mut.sig.profile <- function(path, spec.or.sig, show.counts = F) {
   spectrum.plot.pdf.setup(path)
-  t.plot.spectra(duke.nus.rownames.to.cols(spec.or.sig),
-                 show.counts=show.counts,
-                 show.x.labels = T)
+  t.plot.spectra( duke.nus.rownames.to.cols(spec.or.sig)
+                , show.counts   = show.counts
+                , show.x.labels = T
+                )
   dev.off()
 }
 
@@ -229,7 +230,6 @@ pdf.mut.sig.profile <- function(path, spec.or.sig, show.counts=F) {
 #' @param sigs     ToDo
 #' @param exp      ToDo
 #' @param ranges   ToDo
-#' @param col      ToDo
 #' @param main     ToDo
 #' @param xlab     ToDo
 #' @param ylab     ToDo
@@ -242,7 +242,6 @@ plot.ex.by.range <- function(spectrum,
                              sigs,
                              exp,
                              ranges, # A list of vectors
-                             col=NULL,
                              main=NULL,
                              xlab=NULL,
                              ylab=NULL,
@@ -261,7 +260,6 @@ plot.ex.by.range <- function(spectrum,
       plot.exposures(exp[ ,range], signatures=sigs,
                      input.genomes = spectrum[ , range],
                      plot.proprtion = F,
-                     col=col,
                      main=main,
                      ylab=ylab, xlab=xlab)
       first=F
@@ -270,7 +268,6 @@ plot.ex.by.range <- function(spectrum,
                      input.genomes = spectrum[ , range],
                      plot.proprtion = F, plot.legend=F,
                      main=main,
-                     col=col,
                      ylab=ylab, xlab=xlab)
     }
   }
@@ -284,7 +281,6 @@ plot.ex.by.range <- function(spectrum,
 #' @param sigs     ToDo
 #' @param exp      ToDo
 #' @param ranges   ToDo
-#' @param col      ToDo
 #' @param main     ToDo
 #' @param xlab     ToDo
 #' @param ylab     ToDo
@@ -297,14 +293,13 @@ pdf.ex.by.range <- function(path,   # Out file path
                             sigs,
                             exp,
                             ranges, # A list of vectors
-                            col=NULL,
                             main=NULL,
                             xlab=NULL,
                             ylab=NULL
 ) {
   pdf(path, width=8.2677, height=11.6929, # for A4
       onefile=T, useDingbats=F)
-  plot.ex.by.range(spectrum, sigs, exp, ranges, col, main, xlab, ylab)
+  plot.ex.by.range(spectrum, sigs, exp, ranges, main, xlab, ylab)
   dev.off()
 }
 
@@ -392,7 +387,7 @@ transform.96.sig.op1.op2 <- function(input.sig.mat, in.op, out.op) {
 #' @return A list of three signature matrices: WGS, WES, and "flat".
 #'
 #' @export
-get.signatures <- function(exome.op, signature.file, debug=F) {
+get.signatures <- function(exome.op, signature.file, debug = F) {
   # Read the mutational signatures in genome frequencies
   cosmic <- read.96.duke.nus.format(signature.file)
 
@@ -431,7 +426,6 @@ get.signatures <- function(exome.op, signature.file, debug=F) {
       out.sig.mat[rows, ] <<- out.sig.mat[rows, ] * genome.to.prop.adj.factors[triplet]
     }
 
-    if (debug) debug(transform.one.triplet)
     lapply(rownames(wgs.op), transform.one.triplet)
     out2 <- apply(out.sig.mat, MARGIN = 2, function (x) x / sum(x))
     out2
@@ -445,8 +439,10 @@ get.signatures <- function(exome.op, signature.file, debug=F) {
     pdf.mut.sig.profile('per.triplet.spectra2.pdf', per.triplet.prop)
   }
 
-  list(genome=as.matrix(cosmic), exome=cosmic.wes, flat=per.triplet.prop)
-
+  list( genome = as.matrix(cosmic)
+      , exome  = cosmic.wes
+      , flat   = per.triplet.prop
+      )
 }
 
 # Global variables used by these functions. (prefixed with '.')
@@ -491,29 +487,26 @@ get_ylim = function(y) {
 #' @param show.class.names  ToDo
 #' @param all.labels        ToDo
 #' @param show.x.labels     ToDo
-#' @param trace             ToDo
 #' @param show.paren        ToDo
 #'
 #' @return ToDo
 #'
 #' @importFrom graphics axis mtext plot plot.new rect text
-t.plot.spectra = function(counts.data.frame,
-                         show.counts=T,
-                         show.class.names=F,
-                         all.labels=F,
-                         show.x.labels=F,
-                         trace=F,
-                         show.paren=F) {
-  region <- 'genome'
-
-  num.classes <- 96
-
+#' @importFrom log4r debug
+t.plot.spectra = function( counts.data.frame
+                         , show.counts      = T
+                         , show.class.names = F
+                         , all.labels       = F
+                         , show.x.labels    = F
+                         , show.paren       = F
+                         )
+{
+  region                    <- 'genome'
+  num.classes               <- 96
   base.frequencies.triplets <- flat.64.opportunity()
-
-  spectrum.names <- colnames(counts.data.frame) # first 4 columns are the bases/variant info
-
-  context.before <- .bases
-  context.after  <- .bases
+  spectrum.names            <- colnames(counts.data.frame) # first 4 columns are the bases/variant info
+  context.before            <- .bases
+  context.after             <- .bases
 
   ref.bases = c('C', 'T') # pyrimidines - we don't care about strand
   var.bases = .bases
@@ -523,7 +516,8 @@ t.plot.spectra = function(counts.data.frame,
   for (which.col in c(first.col:length(spectrum.names))) {
     spectrum.name = spectrum.names[which.col]
     display.name = spectrum.name
-    if (trace) cat('\rplotting', display.name, '\n')
+
+    #debug(logger, paste('plotting', display.name))
 
     # get counts per (unstranded) mutation class (6 classes)
     Ref.A = counts.data.frame$Ref=='A'
@@ -543,8 +537,7 @@ t.plot.spectra = function(counts.data.frame,
       "T>G"=sum(counts.data.frame[(Ref.A & Var.C)|(Ref.T & Var.G), which.col])
     )
 
-
-    if (trace) print(unstranded.counts)
+    #debug(logger, unstranded.counts)
     percents = rep(0, num.classes)
     maj.class.counter = 0 # major class. Ie B₁>B₂
     maj.class.names = c() # only those (eg C>A) present in input data
@@ -703,7 +696,6 @@ t.plot.spectra = function(counts.data.frame,
     }
 
   } # end for each spectrum
-  if (trace) cat('\n')
 }
 
 
@@ -720,7 +712,6 @@ t.plot.spectra = function(counts.data.frame,
 #' @param main           ToDo
 #' @param ylab           ToDo
 #' @param xlab           ToDo
-#' @param col            ToDo
 #'
 #' @return ToDo
 #'
@@ -738,8 +729,7 @@ plot.exposures <-
            ylim=NULL,
            main=NULL,
            ylab=NULL,
-           xlab=NULL,
-           col=NULL
+           xlab=NULL
   ) {
     # note - might be reals > 1, not necessary colSum==1
     s.weights <- as.matrix(s.weights) # in case it is a data frame
@@ -747,23 +737,23 @@ plot.exposures <-
     num.sigs = dim(s.weights)[1]
     num.samples = dim(s.weights)[2]
 
-    if (is.null(col)) {
-      if (num.sigs <= 8) {
-        col = # c('skyblue', 'black', 'grey', 'yellow', 'blue', 'brown', 'green4', 'red')
-          c('red', 'black', 'grey', 'yellow', 'blue', 'brown', 'green4', 'skyblue')
+    if (num.sigs <= 8)
+      col = c('red', 'black', 'grey', 'yellow', 'blue', 'brown', 'green4', 'skyblue')
 
-      } else {
-        # lots of signatures; use shaded lines to differentiate
-        col = rainbow(num.sigs)
-      }
-    }
-    if (num.sigs <= 12) {
+    # lots of signatures; use shaded lines to differentiate
+    else
+      col = rainbow(num.sigs)
+
+    if (num.sigs <= 12)
+    {
       p.dense = -1 # will repeat as needed, -1 = solid
       p.angle = 0  # ditto
-    } else {
+    }
+    else
+    {
       # lots of signatures; use shaded lines to differentiate
       p.dense = c(-1,35,35,50,50) # will repeat as needed, -1 = solid
-      p.angle = c(0,0,135,45,135)  # ditto
+      p.angle = c(0,0,135,45,135) # ditto
     }
     # for legend, we need to put in reverse order. make sure this matches
     # order used in barplot
@@ -1018,29 +1008,33 @@ spectrum.plot.pdf.setup <- function(path) {
 #' \dontrun{
 #'   plot.one.exome('test.exome.pdf', exome.100[ , 1, drop=F], exome.op=.h19.96.sureselect.v6.op)
 #' }
-plot.one.exome <- function(path, spec, exome.op, show.class.names=F) {
+plot.one.exome <- function(path, spec, exome.op, show.class.names = F) {
   save.name <- colnames(spec)
 
   spectrum.plot.pdf.setup(path)
 
-  colnames(spec) <- paste(save.name, 'exome', sep='-')
-  t.plot.spectra(duke.nus.rownames.to.cols(spec),
-                 show.class.names=show.class.names,
-                 show.counts=T)
+  colnames(spec) <- paste(save.name, "exome", sep = "-")
+  t.plot.spectra( duke.nus.rownames.to.cols(spec)
+                , show.class.names = show.class.names
+                , show.counts      = T
+                )
 
-  wgs.spec <- transform.96.sig.op1.op2(input.sig.mat = spec,
-                                       in.op=exome.op,
-                                       out.op = hg19.96.WGS.op)
-  colnames(wgs.spec) <- paste(save.name, 'genome', sep='-')
-  t.plot.spectra(duke.nus.rownames.to.cols(wgs.spec), show.counts=F)
+  wgs.spec <- transform.96.sig.op1.op2( input.sig.mat = spec
+                                      , in.op         = exome.op
+                                      , out.op        = hg19.96.WGS.op
+                                      )
+  colnames(wgs.spec) <- paste(save.name, "genome", sep = "-")
+  t.plot.spectra(duke.nus.rownames.to.cols(wgs.spec), show.counts = F)
 
-  flat.spec <- transform.96.sig.op1.op2(input.sig.mat = spec,
-                                        in.op=exome.op,
-                                        out.op = flat.96.op)
-  colnames(flat.spec) <- paste(save.name, 'flat', sep='-')
-  t.plot.spectra(duke.nus.rownames.to.cols(flat.spec), show.counts=F,
-                 show.x.labels = T)
-
+  flat.spec <- transform.96.sig.op1.op2( input.sig.mat = spec
+                                       , in.op         = exome.op
+                                       , out.op        = flat.96.op
+                                       )
+  colnames(flat.spec) <- paste(save.name, "flat", sep = "-")
+  t.plot.spectra( duke.nus.rownames.to.cols(flat.spec)
+                , show.counts   = F
+                , show.x.labels = T
+                )
   dev.off()
 }
 
@@ -1063,15 +1057,15 @@ plot.one.genome <- function(path, spec, exome.op) {
   save.name <- colnames(spec)
 
   spectrum.plot.pdf.setup(path)
-  colnames(spec) <- paste(save.name, 'genome', sep='-')
-  t.plot.spectra(duke.nus.rownames.to.cols(spec), show.counts=T)
+  colnames(spec) <- paste(save.name, "genome", sep = "-")
+  t.plot.spectra(duke.nus.rownames.to.cols(spec), show.counts = T)
 
   flat.spec <- transform.96.sig.op1.op2(input.sig.mat = spec,
                                        out.op= flat.96.op,
                                        in.op = hg19.96.WGS.op)
-  colnames(flat.spec) <- paste(save.name, 'flat', sep='-')
+  colnames(flat.spec) <- paste(save.name, "flat", sep = "-")
   t.plot.spectra(duke.nus.rownames.to.cols(flat.spec),
-                 show.counts=F,
+                 show.counts = F,
                  show.x.labels = T)
 
   dev.off()

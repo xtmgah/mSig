@@ -9,7 +9,7 @@ Author: Steve Rozen [aut, cre],
   Christopher Blöcker [aut]
 Maintainer: Steve Rozen <steve@steverozen.net>
 Description: What the package does (one paragraph).
-Depends: R (>= 3.3.2), grDevices, graphics, lsa, nloptr, parallel, sets, stats, stringi, utils
+Depends: R (>= 3.3.2), grDevices, graphics, log4r, lsa, nloptr, parallel, sets, stats, stringi, utils
 Suggests: testthat
 License: GPL-3 | file LICENSE
 Encoding: UTF-8

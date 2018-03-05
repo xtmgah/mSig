@@ -48,29 +48,29 @@ obj.fun.nbinom.maxlh <- function(exp,
                                  sigs,
                                  nbinom.size) {
 
-  if (any(is.na(exp))) return(Inf)
+  if (any(is.na(exp)))
+    return(Inf)
 
-  reconstruction <-  prop.reconstruct(sigs = sigs, exp = exp)
+  reconstruction <- prop.reconstruct(sigs = sigs, exp = exp)
 
   ## catch errors with NA in the input or in reconstruction.
-  if (any(is.na(reconstruction))) {
-    save(reconstruction, spectrum, sigs, exp, nbinom.size,
-         file='reconstruction.error.R')
-  }
+  if (any(is.na(reconstruction)))
+    save(reconstruction, spectrum, sigs, exp, nbinom.size, file = "reconstruction.error.R")
+
   stopifnot(!any(is.na(reconstruction)))
 
   loglh <- 0
-  for (i in 1:length(spectrum)) { # Iterate over each channel in the
-                                  # spectrum and sum the log
-                                  # likelihoods.
-
-    nbinom <- dnbinom(x=spectrum[i],
-                      mu = reconstruction[i],
-                      size=nbinom.size,
-                      log=T)
-    loglh <-loglh + nbinom
+  # Iterate over each channel in the spectrum and sum the log likelihoods
+  for (i in 1:length(spectrum))
+  {
+    nbinom <- dnbinom( x    = spectrum[i]
+                     , mu   = reconstruction[i]
+                     , size = nbinom.size
+                     , log  = T
+                     )
+    loglh <- loglh + nbinom
   }
-  stopifnot(mode(loglh) == 'numeric' )
+  stopifnot(mode(loglh) == "numeric")
   -loglh
 }
 
@@ -79,55 +79,59 @@ obj.fun.nbinom.maxlh <- function(exp,
 #' signature activites for one tumor. The nlpotr algorithm and the objective
 #' function are arguments.
 #'
-#' @param spectrum    matrix of mutation counts, 96 rows and a column for a tumor 
-#' @param sigs        signatures used to reconstruct the tumor 
+#' @param spectrum    matrix of mutation counts, 96 rows and a column for a tumor
+#' @param sigs        signatures used to reconstruct the tumor
 #' @param algorithm   algorithm for nloptr, default is \code{NLOPT_LN_COBYLA}
 #' @param maxeval     nloptr function stops when \code{maxeval} is reached
-#' @param print_level nloptr option to enable debugging \code{print_level} = 1
 #' @param xtol_rel    stopping criterion for relative change reached (see ?nloptr)
 #' @param obj.fun     objective function for evaluation
-#' @param ...         additional arguments passed to the function 
+#' @param logger      logger object
+#' @param ...         additional arguments passed to the function
 #' @return nloptr object with the objective value, number of iterations and optimal solution
 #'
+#' @importFrom log4r error
 #' @importFrom nloptr nloptr
 nloptr.one.tumor <- function(spectrum,
                              sigs,
-                             algorithm='NLOPT_LN_COBYLA', # ToDo: would it make sense to make this customisable?
-                             maxeval=1000,
-                             print_level=0, # ToDo: is this the same as "trace" in other functions? why give it different names?
-                             xtol_rel=0.001, # 0.0001,
+                             algorithm = "NLOPT_LN_COBYLA", # ToDo: would it make sense to make this customisable?
+                             maxeval   = 1000,
+                             xtol_rel  = 0.001, # 0.0001,
                              obj.fun,
+                             logger,
                              ... # additional arguments for obj.fun
                              ) {
-  if (class(sigs) == 'numeric') {
-    # In this case we got a numeric vector, not a matrix.
-    # We assume the caller intended it as a single
-    # column matrix.
-    sigs <- matrix(sigs, ncol=1)
-  }
+
+
+  # In this case we got a numeric vector, not a matrix.
+  # We assume the caller intended it as a single
+  # column matrix.
+  if (class(sigs) == 'numeric')
+    sigs <- matrix(sigs, ncol = 1)
 
   # The if statement is an example of captuing state with
   # a call to save, which seems useful for debugging
   # in a call to mclapply (multi-core lapply).
-  if (nrow(sigs)!= length(spectrum)) {
+  if (nrow(sigs) != length(spectrum))
     save(spectrum, sigs, file='spectrum.sigs.debug.R')
-  }
-  stopifnot(nrow(sigs) == length(spectrum))
+
+  if (nrow(sigs) != length(spectrum))
+    stop("Signatures and spectra have different length!")
 
   # x0 is uniform distribution of mutations across signatures
   # (Each signature gets the same number of mutations)
   x0 <- rep(sum(spectrum) / ncol(sigs), ncol(sigs))
 
-  res <- nloptr(x0=x0,
-                eval_f=obj.fun,
-                lb=rep(0, ncol(sigs)),
-                opts=list(algorithm=algorithm,
-                          xtol_rel=xtol_rel,
-                          print_level=print_level,
-                          maxeval=maxeval),
-                spectrum=spectrum,
-                sigs=sigs,
-                ...)
+  res <- nloptr( x0       = x0
+               , eval_f   = obj.fun
+               , lb       = rep(0, ncol(sigs))
+               , opts     = list( algorithm = algorithm
+                                , xtol_rel  = xtol_rel
+                                , maxeval   = maxeval
+                                )
+               , spectrum = spectrum
+               , sigs     = sigs
+               , ...
+               )
   names(res$solution) <- colnames(sigs)
   res
 }
@@ -135,39 +139,51 @@ nloptr.one.tumor <- function(spectrum,
 
 #' Calculates the log-likelihood and activities for 1 tumor
 #'
-#' @param spect       matrix of mutation counts, 96 rows and a column for each tumor 
-#' @param sigs        signatures used to reconstruct the tumor 
-#' @param trace       trace = 1 to enable debugging
+#' @param spect       matrix of mutation counts, 96 rows and a column for each tumor
+#' @param sigs        signatures used to reconstruct the tumor
 #' @param algorithm   algorithm for nloptr, default is \code{NLOPT_LN_COBYLA}
 #' @param obj.fun     objective function for evaluation
 #' @param nbinom.size dispersion parameter for the negative binomial model
+#' @param logger      logger object
 #' @return Returns a list with elements:
 #' loglh    - the log likelihood of the best solution (set of exposures) found
 #' exposure - the vector of exposures that generate loglh, in this case
 #' 'exposure' means the number of mutations ascribed to each signature
-
+#'
+#' @importFrom log4r debug warn
 one.lh.and.exp <- function(spect,
                            sigs,
-                           trace,
-                           algorithm='NLOPT_LN_COBYLA',
+                           algorithm = 'NLOPT_LN_COBYLA',
                            obj.fun,
-                           nbinom.size) {
-  r <- nloptr.one.tumor(spect, sigs, maxeval=1e6,
-                        xtol_rel = 1e-7,
-                        algorithm=algorithm, obj.fun = obj.fun,
-                        nbinom.size=nbinom.size)
-  if (trace >  0) cat(r$objective, r$iterations, sum(r$solution), '\n')
+                           nbinom.size,
+                           logger) {
+  if (is.null(logger))
+   stop("one.lh.and.exp")
+
+  r <- nloptr.one.tumor( spect
+                       , sigs
+                       , maxeval     = 1e6
+                       , xtol_rel    = 1e-7
+                       , algorithm   = algorithm
+                       , obj.fun     = obj.fun
+                       , nbinom.size = nbinom.size
+                       , logger      = logger
+                       )
+  debug(logger, paste(r$objective, r$iterations, sum(r$solution)))
 
   loglh <- r$objective
 
-  if (loglh == Inf && trace > 0) cat("Got -Inf in one.lh.and.exp\n")
+  if (loglh == Inf)
+    warn(logger, "Got -Inf in one.lh.and.exp") # ToDo: is this really just worth a warning?
 
   # sum(recon) is likely to be close to, but not equal to the number
   # of mutations in the spectrum, so we scale exposures to get the
   # number of mutations in the spectrum
   exp <- r$solution * (sum(spect) / sum(r$solution)) # sum(recon))
 
-  list(loglh=-loglh, exposure=exp)
+  list( loglh    = -loglh
+      , exposure = exp
+      )
 }
 
 
@@ -195,98 +211,104 @@ is.superset.of.any <- function(probe, background) {
 
 #' Assigns activities of mutational signatures on a per-tumor basis
 #'
-#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
-#' @param sigs        signatures used to reconstruct the tumor 
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor
+#' @param sigs        signatures used to reconstruct the tumor
 #' @param max.level   maximum number of active signatures
 #' @param p.thresh    p-value threshold for significance
-#' @param trace       trace = 1 to enable debugging
 #' @param obj.fun     objective function for evaluation
 #' @param nbinom.size dispersion parameter for the negative binomial model
+#' @param logger      logger object
 #'
 #' @return matrix of assignments of activity to each mutational signature in \code{sigs}
 #'
+#' @importFrom log4r debug
 #' @importFrom sets set set_combn set_union
 #' @importFrom stats pchisq
 sparse.assign.activity <- function(spect,
                                    sigs,
                                    max.level=5,
                                    p.thresh=0.05,
-                                   trace=0,
                                    obj.fun,
-                                   nbinom.size) {
-  mode(spect) <-  'numeric'
-  start <- one.lh.and.exp(spect, sigs, trace=0,
-                          obj.fun=obj.fun,
-                          nbinom.size=nbinom.size)
-  lh.w.all <- start$loglh
-  start.exp <- start$exposure
+                                   nbinom.size,
+                                   logger) {
+  mode(spect) <- "numeric"
+  start       <- one.lh.and.exp( spect
+                               , sigs
+                               , obj.fun     = obj.fun
+                               , nbinom.size = nbinom.size
+                               , logger      = logger
+                               )
+  lh.w.all        <- start$loglh
+  start.exp       <- start$exposure
   non.0.exp.index <- which(start.exp > 0.5)
-  if (trace > 0) {
-    cat('Starting with',
-        paste(names(start.exp)[non.0.exp.index], collapse=','),
-        '\n')
-    cat('max.level =', max.level, '\n')
-  }
-  if (length(non.0.exp.index) < 2) {
-    if (trace > 0) cat('returning, only', length(non.0.exp.index),
-                       'non-0 exposures\n')
+
+  debug(logger, paste("Starting with", paste(names(start.exp)[non.0.exp.index], collapse = ",")))
+  debug(logger, paste("max.level =", max.level))
+
+  if (length(non.0.exp.index) < 2)
+  {
+    debug(logger, paste("returning, only", length(non.0.exp.index), "non-0 exposures"))
     return(start.exp)
   }
-  max.level <- min(max.level, length(non.0.exp.index) - 1)
 
-  c.r.s <- set() # subsets of the signatures indices that cannot be removed -- ToDo: change the name to something meaningful!
-
-  max.p <- numeric(max.level)
-  best.subset <- non.0.exp.index
-  best.try <- start
+  max.level         <- min(max.level, length(non.0.exp.index) - 1)
+  c.r.s             <- set() # subsets of the signatures indices that cannot be removed, c.r.s = "cannot remove set"
+  max.p             <- numeric(max.level)
+  best.subset       <- non.0.exp.index
+  best.try          <- start
   best.try.is.start <- T
 
-  for (df in 1:max.level) {
-    if (trace > 0) cat('df =', df, '\n')
+  for (df in 1:max.level)
+  {
+    debug(logger, paste("df =", df))
     subsets <- set_combn(non.0.exp.index, df)
-    for (subset in subsets) {
+    for (subset in subsets)
+    {
       # subset is of class set (package sets)
       if (is.superset.of.any(subset, c.r.s)) next
       subset.to.remove.v <- as.numeric(subset)
-      subset.name <- paste(names(start.exp)[subset.to.remove.v], collapse=',')
-      tmp.set <- setdiff(non.0.exp.index, subset.to.remove.v)
-      try.sigs <- sigs[ , tmp.set]
+      subset.name        <- paste(names(start.exp)[subset.to.remove.v], collapse = ",")
+      tmp.set            <- setdiff(non.0.exp.index, subset.to.remove.v)
+      try.sigs           <- sigs[ , tmp.set]
 
-      if (length(tmp.set) == 1) {
+      if (length(tmp.set) == 1)
+      {
         try.sigs <- as.matrix(try.sigs)
         rownames(try.sigs) <- rownames(sigs)
-        if (trace > 0) cat("New code\n")
       }
 
       # Get the max lh for try.sig
-      try <- one.lh.and.exp(spect, try.sigs, trace=0,
-                            obj.fun=obj.fun,
-                            nbinom.size=nbinom.size)
+      try <- one.lh.and.exp( spect
+                           , try.sigs
+                           , obj.fun     = obj.fun
+                           , nbinom.size = nbinom.size
+                           , logger      = logger
+                           )
       # try contains maxlh and exposure
       statistic <- 2 * (lh.w.all - try$loglh)
-      chisq.p <- pchisq(statistic, df, lower.tail=F)
-      if (trace > 0) {
-        cat('Trying', subset.name, 'p =', chisq.p, '; ')
-        if (trace > 1) cat('loglh =', try$loglh, '; statistic  =', statistic, ';')
-      }
-      if (chisq.p > p.thresh) {
+      chisq.p   <- pchisq(statistic, df, lower.tail = F)
+      debug(logger, paste("Trying", subset.name, "p =", chisq.p, ";"))
+      info(logger, paste("loglh =", try$loglh, "; statistic  =", statistic, ";"))
+      if (chisq.p > p.thresh)
+      {
         # This an acceptable set of exposures
-        if (trace > 0) cat (' acceptable;')
-        if (chisq.p > max.p[df]) {
+        debug(logger, "acceptable;")
+        if (chisq.p > max.p[df])
+        {
           # This is the best so far
-          max.p[df] <- chisq.p
-          best.subset <- tmp.set
-          best.try <- try
+          max.p[df]         <- chisq.p
+          best.subset       <- tmp.set
+          best.try          <- try
           best.try.is.start <- F
-          if (trace > 0) cat('best\n')
-        } else {
-          if (trace > 0) cat('not best\n')
+          debug(logger, "best")
         }
-      } else {
+        else
+          debug(logger, "not best")
+      }
+      else
+      {
         c.r.s <- set_union(c.r.s, set(subset))
-        if (trace > 0)  {
-          cat('cannot remove\n')
-        }
+        debug(logger, "cannot remove")
       }
     } # end for (subset in subsets)
     if (max.p[df] == 0) break
@@ -295,104 +317,121 @@ sparse.assign.activity <- function(spect,
   # Need to return the exposures in the context of the orginal signatures matrix
   out.exp <- numeric(ncol(sigs)) #all zeros
   names(out.exp) <- colnames(sigs)
-  if (best.try.is.start) {
+  if (best.try.is.start)
     out.exp <- start.exp
-  } else {
+  else
     out.exp[best.subset] <- best.try$exposure
-  }
-  if (trace > 0) {
-    cat('max.p =', paste(max.p, collapse = ', '), '\n')
-    cat('Ending with',
-        paste(names(start.exp)[best.subset], collapse=','),
-        '\n')
-  }
+
+  debug(logger, paste("max.p =", paste(max.p, collapse = ", ")))
+  debug(logger, paste("Ending with", paste(names(start.exp)[best.subset], collapse = ",")))
+
   stopifnot(abs(sum(out.exp) - sum(spect)) < 2)
+  if (abs(sum(out.exp) - sum(spect)) >= 2)
+  {
+    msg = "" # ToDo: what is this error?
+    error(logger, msg)
+    stop(msg)
+  }
   out.exp
 }
 
 
 #' Likelihood ratio test for reconstruction of tumors with and without signature of interest
 #'
-#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs        signatures used to reconstruct the tumor
 #' @param sig.to.test maximum number of active signatures
-#' @param trace       trace = 1 to enable debugging
 #' @param algorithm   algorithm for nloptr, default is \code{NLOPT_LN_COBYLA}
 #' @param obj.fun     objective function for evaluation
 #' @param nbinom.size dispersion parameter for the negative binomial model
+#' @param logger      logger object
 #'
-#' @return list object with log-likelihoods calculated with and without signature of interest, test statistic and chi-square p-value 
+#' @return list object with log-likelihoods calculated with and without signature of interest, test statistic and chi-square p-value
 #'
 #' @importFrom stats pchisq
+#' @importFrom log4r info
 is.present.p.m.likelihood <- function(spect,
                                       sigs,
                                       sig.to.test,
-                                      trace=0,
-                                      algorithm='NLOPT_LN_COBYLA',
+                                      algorithm = 'NLOPT_LN_COBYLA',
                                       obj.fun,
-                                      nbinom.size) {
+                                      nbinom.size,
+                                      logger)
+{
+  loglh.with    <- one.lh.and.exp( spect
+                                 , sigs
+                                 , algorithm   = algorithm
+                                 , obj.fun     = obj.fun
+                                 , nbinom.size = nbinom.size
+                                 , logger      = logger
+                                 )$loglh
+  loglh.without <- one.lh.and.exp( spect
+                                 , sigs[, -sig.to.test]
+                                 , algorithm   = algorithm
+                                 , obj.fun     = obj.fun
+                                 , nbinom.size = nbinom.size
+                                 , logger      = logger
+                                 )$loglh
 
-  loglh.with <- one.lh.and.exp(spect, sigs, trace=trace,
-                               algorithm=algorithm, obj.fun=obj.fun,
-                               nbinom.size=nbinom.size)$loglh
-  loglh.without <- one.lh.and.exp(spect, sigs[ ,-sig.to.test], trace=trace,
-                                  algorithm=algorithm,
-                                  obj.fun=obj.fun,
-                                  nbinom.size=nbinom.size)$loglh
   statistic <- 2 * (loglh.with - loglh.without)
-  chisq.p <- pchisq(statistic, 1, lower.tail=F)
-  if (trace > 0) cat('statistic  =', statistic, '\nchisq p =', chisq.p, '\n')
+  chisq.p   <- pchisq(statistic, 1, lower.tail = F)
 
-  list(with=loglh.with,
-       without=loglh.without,
-       statistic=statistic,
-       chisq.p=chisq.p)
+  info(logger, paste0("statistic = ", statistic, ", chisq p = ", chisq.p))
+
+  list( with      = loglh.with
+      , without   = loglh.without
+      , statistic = statistic
+      , chisq.p   = chisq.p
+      )
 }
 
 
 #' Calculates the chi-square p-pval of likelihoods of reconstructed mutations counts with and without the signature of interest
 #'
-#' @param spect            matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spect            matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs             signatures used to reconstruct the tumor
-#' @param target.sig.index index of target signature 
-#' @param trace            trace = 1 to enable debugging
+#' @param target.sig.index index of target signature
 #' @param obj.fun          objective function for evaluation
 #' @param nbinom.size      dispersion parameter for the negative binomial model
+#' @param logger           logger object
 #'
 #' @return a p-value for the likelihood of a target is required to reconstruct the mutation counts of a tumor
 signature.presence.test <- function(spect,
                                     sigs,
                                     target.sig.index,
-                                    trace=0,
                                     obj.fun,
-                                    nbinom.size) {
-  is.present.p.m.likelihood(spect,
-                       sigs, target.sig.index,
-                       trace=trace, obj.fun=obj.fun,
-                       nbinom.size=nbinom.size)$chisq.p
+                                    nbinom.size,
+                                    logger) {
+  is.present.p.m.likelihood( spect
+                           , sigs
+                           , target.sig.index
+                           , obj.fun     = obj.fun
+                           , nbinom.size = nbinom.size
+                           , logger      = logger
+                           )$chisq.p
 }
 
 
 #' Calculates exposures for entire set of tumors.
 #'
-#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs        signatures used to reconstruct the tumor
 #' @param exp         exposure or activity used to reconstruct a tumor
 #' @param obj.fun     objective function for evaluation
 #' @param nbinom.size dispersion parameter for the negative binomial model
 #'
-#' @return a list of negative log-likelihoods of the reconstructed matrices 
+#' @return a list of negative log-likelihoods of the reconstructed matrices
 compute.all.neg.log.lh <- function(spect,
                                    sigs,
                                    exp,
                                    obj.fun,
                                    nbinom.size) {
-  out <- numeric(ncol(spect))
+  out        <- numeric(ncol(spect))
   names(out) <- colnames(spect)
-  for (i in 1:ncol(spect)) {
-    recon <- prop.reconstruct(sigs, exp[ , i])
-    out[i] <- obj.fun(exp[ ,1], spect[ ,i], sigs,
-                      nbinom.size=nbinom.size)
+  for (i in 1:ncol(spect))
+  {
+    recon  <- prop.reconstruct(sigs, exp[, i])
+    out[i] <- obj.fun(exp[, 1], spect[, i], sigs, nbinom.size = nbinom.size)
   }
   out
 }
@@ -400,23 +439,23 @@ compute.all.neg.log.lh <- function(spect,
 
 #' Carries out sanity check on the signature and activity matrices from the mSigAct reconstructions
 #'
-#' @param spectrum matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spectrum matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs     signatures used to reconstruct the tumor
 #' @param exposure exposure or activity used to reconstruct a tumor
- 
+
 sanity.check.ex <- function(spectrum, sigs, exposure) {
-  ex.sums <- margin.table(exposure, 2)
+  ex.sums         <- margin.table(exposure, 2)
   all.reconstruct <- as.matrix(sigs)  %*% exposure
-  rec.sums <- margin.table(all.reconstruct, 2)
+  rec.sums        <- margin.table(all.reconstruct, 2)
   stopifnot(abs(ex.sums - rec.sums) < 1)
-  spect.sums <- margin.table(spectrum, 2)
+  spect.sums      <- margin.table(spectrum, 2)
   stopifnot(abs(spect.sums - ex.sums) < 1)
 }
 
 
-#' Plots reconstruction of log-likelihoods of reconstructed tumors 
+#' Plots reconstruction of log-likelihoods of reconstructed tumors
 #'
-#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs        signatures used to reconstruct the tumor
 #' @param ex          exposure or activity used to reconstruct a tumor
 #' @param range       range of tumors to plot reconstruction
@@ -426,36 +465,41 @@ sanity.check.ex <- function(spectrum, sigs, exposure) {
 #' @return reconstruction plots with negative log-likelihoods
 #'
 #' @importFrom graphics abline axis plot
-plot.recon.and.loglh <- function(spect,
-                                 sigs,
-                                 ex,
-                                 range,
-                                 obj.fun,
-                                 nbinom.size) {
-  plot.reconstruction(signatures      = sigs,
-                      exposures.mat   = ex[ , range, drop=F],
-                      input.genomes   = spect[ , range, drop=F],
-                      normalize.recon = T)
+plot.recon.and.loglh <- function( spect
+                                , sigs
+                                , ex
+                                , range
+                                , obj.fun
+                                , nbinom.size
+                                )
+{
+  plot.reconstruction(signatures       = sigs
+                     , exposures.mat   = ex[, range, drop = F]
+                     , input.genomes   = spect[, range, drop = F]
+                     , normalize.recon = T
+                     )
 
 
 
-  neg.ll <- compute.all.neg.log.lh(spect[ ,range,drop=F], sigs=sigs,
-                                   exp = ex[ , range, drop=F],
-                                   obj.fun=obj.fun,
-                                   nbinom.size=nbinom.size)
+  neg.ll <- compute.all.neg.log.lh( spect[, range, drop = F]
+                                  , sigs        = sigs
+                                  , exp         = ex[, range, drop = F]
+                                  , obj.fun     = obj.fun
+                                  , nbinom.size = nbinom.size
+                                  )
   s.names <- names(neg.ll)
   l.range <- 1:length(s.names)
-  plot(neg.ll, xaxt='n', ylab=('Neg ln likelihood'), xlab='', new=T)
-  axis(side = 1, labels = s.names, at=l.range, las=2)
-  abline(v=l.range, lty=3)
+  plot(neg.ll, xaxt = "n", ylab = ("Neg ln likelihood"), xlab = "", new = T)
+  axis(side = 1, labels = s.names, at = l.range, las = 2)
+  abline(v = l.range, lty = 3)
 }
 
 
 #' plot.recon.by.range calls the objective function as one of its analyses.
-#' Plots reconstruction of log-likelihoods of for a range of reconstructed tumors 
+#' Plots reconstruction of log-likelihoods of for a range of reconstructed tumors
 #'
 #' @param path        path for pdfs to be saved
-#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spect       matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs        signatures used to reconstruct the tumor
 #' @param ex          exposure or activity used to reconstruct a tumor
 #' @param range       range of tumors to plot reconstruction
@@ -465,27 +509,26 @@ plot.recon.and.loglh <- function(spect,
 #' @return T
 #'
 #' @importFrom grDevices cairo_pdf dev.off
-plot.recon.by.range <- function(path,
-                                spect,
-                                sigs,
-                                ex,
-                                range,
-                                obj.fun,
-                                nbinom.size) {
-  cairo_pdf(path,
-            width=8.2677, height=11.6929, # for A4
-            onefile=T)
-  par(
-    mfrow=c(3,1), # 3 graphs per page
-    mar=c(1.5,1.1,4.6,1), # space between plot and figure, for axis labels etc
-    oma=c(4,6,3,3) # outer margin between figure and device.
-  )
+plot.recon.by.range <- function( path
+                               , spect
+                               , sigs
+                               , ex
+                               , range
+                               , obj.fun
+                               , nbinom.size
+                               )
+{
+  # sizes for A4 paper
+  cairo_pdf(path, width = 8.2677, height = 11.6929, onefile = T)
+  par( mfrow = c(3, 1)             # 3 graphs per page
+     , mar   = c(1.5, 1.1, 4.6, 1) # space between plot and figure, for axis labels etc
+     , oma   = c(4, 6, 3, 3)       # outer margin between figure and device.
+     )
 
-  for (r in range) {
+  for (r in range)
     plot.recon.and.loglh(spect, sigs, ex, r,
                          obj.fun=obj.fun,
                          nbinom.size=nbinom.size)
-  }
   dev.off()
 }
 
@@ -501,7 +544,7 @@ plot.recon.by.range <- function(path,
 #'  * <out.dir>/<out.prefix>.pval.histogram.pdf
 #'  * <out.dir>/<out.prefix>.reconstruction.err.pdf
 #'
-#' @param spectra         matrix of mutation counts, 96 rows and a column for a tumor 
+#' @param spectra         matrix of mutation counts, 96 rows and a column for a tumor
 #' @param sigs            signatures used to reconstruct the tumor
 #' @param target.sig.name name of signature to be tested
 #' @param out.dir         Path to the output directory for PDFs. PDFs will be
@@ -510,14 +553,17 @@ plot.recon.by.range <- function(path,
 #'                        names of the generated PDFs if out.dir is specified.
 #' @param nbinom.size     dispersion parameter for the negative binomial
 #' @param obj.fun         objective function for evaluation
-#' @param trace           Prints debug output if trace > 0. ToDo: why is this an integer?!
-#' @param col             ## is this used?
+#' @param loglevel        loglevel to control how detailed logging should be done.
+#'                        Valid choices: DEBUG, INFO, WARN, ERROR, default: WARN.
+#' @param logfile         path to the file in which the logs should be saved.
+#'                        Default: mSigAct.log in the current working directory.
 #' @param mc.cores        Number of cores to use for computations.
 #'
 #' @return Output is an R a list with the elements: pval, exposure
 #'
 #' @importFrom grDevices pdf dev.off
 #' @importFrom graphics hist
+#' @importFrom log4r create.logger error warn
 #' @importFrom parallel mclapply
 #'
 #' @export
@@ -525,96 +571,133 @@ run.mSigAct <- function( spectra
                        , sigs
                        , target.sig.name
                        , nbinom.size
-                       , out.dir       = NULL
-                       , out.prefix    = ""
-                       , obj.fun       = obj.fun.nbinom.maxlh
-                       , trace         = 0
-                       , col           = NULL
-                       , mc.cores      = 1
+                       , out.dir         = NULL
+                       , out.prefix      = ""
+                       , obj.fun         = obj.fun.nbinom.maxlh
+                       , loglevel        = "WARN"
+                       , logfile         = "./mSigAct.log"
+                       , mc.cores        = 1
                        )
 {
-  target.sig.index <- which(colnames(sigs) == target.sig.name)
-
-  # If an output dir was given, it should exist
-  if (!is.null(out.dir) && !dir.exists(out.dir))
-    stop("The specified output directory does not exist!", call. = FALSE)
-
-  # The target signature must be in the set of given signatures
-  if (!(target.sig.name %in% colnames(sigs)))
-    stop("The target signature is not in the set of given signatures!", call. = FALSE)
-
-  # Need to match exactly one signature name
-  if (length(target.sig.index) != 1)
-    stop("The target signature must be exactly one signature!", call. = FALSE)
-
-  s.spectra         <- spectra.columns.sort(spectra)
-  s.spectra.to.list <- split(t(s.spectra), 1:ncol(s.spectra))
-
-  out.pvals <- mclapply( X                = s.spectra.to.list
-                       , FUN              = signature.presence.test
-                       , sigs             = sigs
-                       , target.sig.index = target.sig.index
-                       , trace            = trace
-                       , obj.fun          = obj.fun
-                       , nbinom.size      = nbinom.size
-                       , mc.cores         = mc.cores
-                       )
-
-  out.pvals        <- unlist(out.pvals)
-  names(out.pvals) <- colnames(s.spectra)
-
-  low.pval <- which(out.pvals < 0.05)
-  if (!is.null(out.dir) && length(low.pval) > 0)
+  # set up the logger
+  # we have to do this OUTSIDE of tryCatch so the logger is available in the
+  # error handling code
+  if (!(loglevel %in% c("DEBUG", "INFO", "WARN", "ERROR")))
   {
-    # Have to wrap column-wise index of s.spectra in as.matrix in case
-    # length(low.pval) == 1, in which case indexing returns a vector
-
-    check.w.sig <- s.spectra[, low.pval, drop=F]
-    # The column names are lost if length(low.pval) == 1
-    colnames(check.w.sig) = colnames(s.spectra)[low.pval]
-    spec.path <- file.path(out.dir, paste(out.prefix, 'check.with.sig.pdf', sep = "."))
-    pdf.mut.sig.profile(path = spec.path, check.w.sig)
+    logger <- create.logger(logfile = logfile, level = "WARN")
+    warn(logger, paste("Invalid loglevel", loglevel, "using default loglevel WARN."))
   }
+  else
+    logger <- create.logger(logfile = logfile, level = loglevel)
 
-  out.exp <- mclapply( X           = s.spectra.to.list
-                     , FUN         = sparse.assign.activity
-                     , sigs        = sigs
-                     , obj.fun     = obj.fun
-                     , nbinom.size = nbinom.size
-                     , mc.cores    = mc.cores
-                     )
-
-  out.exp  <-  do.call(cbind, out.exp)
-  colnames(out.exp)  <-  colnames(s.spectra)
-  sanity.check.ex(s.spectra, sigs, out.exp)
-
-  # Generate PDFs if an outdir was given
-  if (!is.null(out.dir))
+  tryCatch(
   {
-    # Histogram
-    hist.path <- file.path(out.dir, paste(out.prefix, 'pval.histogram.pdf', sep = "."))
-    pdf(hist.path, useDingbats = F)
-    hist(out.pvals, breaks = seq(from = 0, to = 1, by = 0.01))
-    dev.off()
+    target.sig.index <- which(colnames(sigs) == target.sig.name)
 
-    # Exposures
-    approx.num.per.row <- 30
-    starts <- seq(from = 1, to = ncol(s.spectra), by = approx.num.per.row)
-    ranges <- lapply(starts, function(x) { x:(min(x + approx.num.per.row - 1, ncol(s.spectra))) } )
-    exp.path <- file.path(out.dir, paste(out.prefix, 'exposures.pdf', sep="."))
-    pdf.ex.by.range(exp.path, s.spectra, sigs, exp = out.exp, range = ranges, col = col)
+    # If an output dir was given, it should exist
+    if (!is.null(out.dir) && !dir.exists(out.dir))
+      stop("The specified output directory does not exist!", call. = FALSE)
 
-    # Reconstruction
-    recon.path <- file.path(out.dir, paste(out.prefix, 'reconstruction.err.pdf', sep = "."))
-    plot.recon.by.range( recon.path
-                       , s.spectra
-                       , sigs
-                       , out.exp
-                       , range       = ranges
+    # The target signature must be in the set of given signatures
+    if (!(target.sig.name %in% colnames(sigs)))
+      stop("The target signature is not in the set of given signatures!", call. = FALSE)
+
+    # Need to match exactly one signature name
+    if (length(target.sig.index) != 1)
+      stop("The target signature must be exactly one signature!", call. = FALSE)
+
+    s.spectra         <- spectra.columns.sort(spectra)
+    s.spectra.to.list <- split(t(s.spectra), 1:ncol(s.spectra))
+
+    out.pvals <- mclapply( X                = s.spectra.to.list
+                         , FUN              = signature.presence.test
+                         , sigs             = sigs
+                         , target.sig.index = target.sig.index
+                         , obj.fun          = obj.fun
+                         , nbinom.size      = nbinom.size
+                         , mc.cores         = mc.cores
+                         , logger           = logger
+                         )
+
+    out.pvals        <- unlist(out.pvals)
+    names(out.pvals) <- colnames(s.spectra)
+    low.pval         <- which(out.pvals < 0.05)
+
+    if (!is.null(out.dir) && length(low.pval) > 0)
+    {
+      # Have to wrap column-wise index of s.spectra in as.matrix in case
+      # length(low.pval) == 1, in which case indexing returns a vector
+
+      check.w.sig <- s.spectra[, low.pval, drop = F]
+      # The column names are lost if length(low.pval) == 1
+      colnames(check.w.sig) = colnames(s.spectra)[low.pval]
+      spec.path <- file.path(out.dir, paste(out.prefix, "check.with.sig.pdf", sep = "."))
+      pdf.mut.sig.profile(path = spec.path, check.w.sig)
+    }
+
+    out.exp <- mclapply( X           = s.spectra.to.list
+                       , FUN         = sparse.assign.activity
+                       , sigs        = sigs
                        , obj.fun     = obj.fun
                        , nbinom.size = nbinom.size
+                       , mc.cores    = mc.cores
+                       , logger      = logger
                        )
+
+    out.exp  <-  do.call(cbind, out.exp)
+    colnames(out.exp)  <-  colnames(s.spectra)
+    sanity.check.ex(s.spectra, sigs, out.exp)
+
+    # Generate PDFs if an outdir was given
+    if (!is.null(out.dir))
+    {
+      # Histogram
+      hist.path <- file.path(out.dir, paste(out.prefix, "pval.histogram.pdf", sep = "."))
+      pdf(hist.path, useDingbats = F)
+      hist(out.pvals, breaks = seq(from = 0, to = 1, by = 0.01))
+      dev.off()
+
+      # Exposures
+      approx.num.per.row <- 30
+      starts             <- seq(from = 1, to = ncol(s.spectra), by = approx.num.per.row)
+      ranges             <- lapply(starts, function(x) { x:(min(x + approx.num.per.row - 1, ncol(s.spectra))) })
+      exp.path           <- file.path(out.dir, paste(out.prefix, "exposures.pdf", sep = "."))
+      pdf.ex.by.range(exp.path, s.spectra, sigs, exp = out.exp, range = ranges)
+
+      # Reconstruction
+      recon.path <- file.path(out.dir, paste(out.prefix, "reconstruction.err.pdf", sep = "."))
+      plot.recon.by.range( recon.path
+                         , s.spectra
+                         , sigs
+                         , out.exp
+                         , range       = ranges
+                         , obj.fun     = obj.fun
+                         , nbinom.size = nbinom.size
+                         )
+    }
+
+    list(pval = out.pvals, exposure = out.exp)
   }
 
-  list(pval = out.pvals, exposure = out.exp)
+  # warning handling code
+  # But DON'T use R's warning(...) function! If you want to print a warning, do
+  # it through the logger, if you want to stop execution, throw an error!
+  # see https://www.r-bloggers.com/a-warning-about-warning/
+  , warning = function(w)
+  {
+    warn(logger, w)
+    cat(w)
+  }
+
+  # error handling code
+  , error = function(e)
+  {
+    error(logger, e)
+    cat(e)
+  }
+
+  # Clean up code, e.g. to close file handles
+  , finally =
+  {
+  })
 }
